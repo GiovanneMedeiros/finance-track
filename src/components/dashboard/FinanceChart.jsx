@@ -11,7 +11,7 @@ export function FinanceChart({ data, balanceLabel }) {
           <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-700/80 dark:text-emerald-200/70">
             Receitas vs despesas
           </p>
-          <h3 className="text-xl text-slate-950 dark:text-white">Pulso do caixa</h3>
+          <h3 className="text-xl text-slate-950 dark:text-white">Fluxo de caixa</h3>
         </div>
 
         <div className="rounded-xl border border-slate-900/10 bg-slate-900/[0.04] px-3.5 py-2.5 text-[13px] text-[var(--text-secondary)] dark:border-white/10 dark:bg-white/[0.04]">

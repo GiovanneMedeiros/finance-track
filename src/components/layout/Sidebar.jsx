@@ -196,7 +196,7 @@ export function Sidebar({ balanceLabel, formattedIncome, formattedExpense, onOpe
         </div>
 
         <p className="mt-2 text-[13px] text-slate-950 dark:text-white">
-          Economizar <span className="font-semibold text-emerald-600 dark:text-emerald-400">{goalTargetLabel}</span>
+          Objetivo: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{goalTargetLabel}</span>
         </p>
 
         <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-900/6 dark:bg-white/6">
@@ -214,7 +214,7 @@ export function Sidebar({ balanceLabel, formattedIncome, formattedExpense, onOpe
 
       {/* ── CTA ── */}
       <Button className="mt-3 w-full" onClick={onOpenModal}>
-        Nova transacao
+        Adicionar transacao
       </Button>
     </aside>
   )

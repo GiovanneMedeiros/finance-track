@@ -11,15 +11,15 @@ export function Header({ currentDateLabel, transactionCount, onOpenModal, onOpen
         <div className="min-w-0 shrink space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-3 py-1 text-[11px] uppercase tracking-[0.26em] text-emerald-700 transition-colors duration-300 dark:border-white/10 dark:bg-white/[0.04] dark:text-emerald-200/75">
             <Sparkles size={13} />
-            Overview financeiro
+            Visao financeira
           </div>
 
           <div>
             <h2 className="text-xl text-slate-950 transition-colors duration-300 dark:text-white sm:text-2xl">
-              Dashboard pessoal
+              Painel financeiro
             </h2>
             <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
-              {currentDateLabel} · {transactionCount} movimentacoes registradas.
+              {currentDateLabel} · {transactionCount} transacoes registradas.
             </p>
           </div>
         </div>

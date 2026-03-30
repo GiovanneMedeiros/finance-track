@@ -105,7 +105,7 @@ export function DashboardPage({ onSignOut }) {
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1.5">
                   <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-700/80 dark:text-emerald-200/70">
-                    Insight rapido
+                    Resumo rapido
                   </p>
                   <h3 className="text-xl text-slate-950 dark:text-white">Radar financeiro</h3>
                 </div>
@@ -137,15 +137,15 @@ export function DashboardPage({ onSignOut }) {
 
                 <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/8 p-4">
                   <p className="text-[13px] text-emerald-900 dark:text-emerald-100">
-                    Seu saldo esta {summary.balance >= 0 ? 'positivo' : 'negativo'}.
+                    Seu saldo atual esta {summary.balance >= 0 ? 'positivo' : 'negativo'}.
                   </p>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-emerald-900/70 dark:text-emerald-100/70">
-                    Use os filtros por categoria para entender onde estao os maiores impactos no mes.
+                    Use os filtros por categoria para identificar os maiores impactos do mes.
                   </p>
                 </div>
 
                 <Button className="w-full" variant="secondary" onClick={openModal}>
-                  Registrar novo lancamento
+                  Registrar nova transacao
                 </Button>
               </div>
             </Card>
@@ -169,7 +169,7 @@ export function DashboardPage({ onSignOut }) {
       <Modal
         open={isModalOpen}
         title="Nova transacao"
-        description="Adicione receitas e despesas com categoria, valor e data. Os dados ficam salvos localmente no navegador."
+        description="Registre receitas e despesas com categoria, valor e data. Os dados ficam salvos localmente no navegador."
         onClose={closeModal}
       >
         <AddTransactionForm

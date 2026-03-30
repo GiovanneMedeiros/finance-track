@@ -14,18 +14,18 @@ const MotionSpan = motion.span
 const detailCards = [
   {
     index: '01',
-    title: 'Ritmo visual controlado',
-    text: 'Menos efeito neon, mais precisão tipográfica e materialidade premium.',
+    title: 'Visão completa das suas finanças',
+    text: 'Centralize faturas, gastos e saldo em um único painel para decidir com mais segurança.',
   },
   {
     index: '02',
-    title: 'Presença institucional',
-    text: 'Uma tela de acesso que parece pertencer a um produto já consolidado.',
+    title: 'Importação inteligente de faturas',
+    text: 'Envie a fatura do cartão e o sistema organiza os lançamentos por categoria automaticamente.',
   },
   {
     index: '03',
-    title: 'Interface com assinatura',
-    text: 'Composição autoral para diferenciar a identidade do restante do portfólio.',
+    title: 'Controle que gera resultado',
+    text: 'Acompanhe o saldo disponível em tempo real e ganhe previsibilidade para gastar melhor.',
   },
 ]
 
@@ -156,10 +156,10 @@ export function AuthHeroPanel({ onAccessClick }) {
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 sm:text-[11px]">
-                Verification room
+                FinanceTrack em foco
               </div>
               <div className="mt-1.5 text-base font-semibold text-[#17130f] dark:text-white sm:text-lg">
-                Autenticação tratada como experiência de marca
+                Seu controle financeiro com praticidade no dia a dia
               </div>
             </div>
             <div className="shrink-0 rounded-xl border border-black/8 bg-white/70 p-2.5 text-[#9e7450] dark:border-white/10 dark:bg-white/[0.05] dark:text-[#d4b08a] sm:rounded-2xl sm:p-3">

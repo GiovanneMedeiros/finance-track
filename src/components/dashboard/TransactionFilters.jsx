@@ -10,7 +10,7 @@ export function TransactionFilters({ categories, selectedCategory, onSelect }) {
           <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-700/80 dark:text-emerald-200/70">
             Categorias
           </p>
-          <h3 className="text-lg text-slate-950 dark:text-white">Filtrar transacoes</h3>
+          <h3 className="text-lg text-slate-950 dark:text-white">Filtro por categoria</h3>
         </div>
         <span className="rounded-full border border-slate-900/10 px-2.5 py-0.5 text-[11px] text-[var(--text-secondary)] dark:border-white/10">
           {categories.length - 1} grupos
