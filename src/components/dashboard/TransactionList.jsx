@@ -17,10 +17,10 @@ export function TransactionList({ transactions, onRemove }) {
           <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-700/80 dark:text-emerald-200/70">
             Historico
           </p>
-          <h3 className="text-lg text-slate-950 dark:text-white">Ultimas transacoes</h3>
+          <h3 className="text-lg text-slate-950 dark:text-white">Transacoes recentes</h3>
         </div>
         <p className="text-[13px] text-[var(--text-secondary)]">
-          {transactions.length} registros exibidos
+          {transactions.length} transacoes exibidas
         </p>
       </div>
 

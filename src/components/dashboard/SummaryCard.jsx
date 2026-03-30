@@ -33,7 +33,7 @@ export function SummaryCard({ title, value, accent, icon, trend }) {
           {isPositive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
           {Math.abs(trend)}%
         </span>
-        <span>vs. periodo anterior</span>
+        <span>em relacao ao periodo anterior</span>
       </div>
     </Card>
   )
