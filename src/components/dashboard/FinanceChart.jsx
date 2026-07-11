@@ -3,7 +3,7 @@ import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis
 import { Card } from '@/components/ui/Card'
 import { formatCurrency } from '@/utils/formatters'
 
-export function FinanceChart({ data, balanceLabel }) {
+export function FinanceChart({ data, balanceLabel, isPremium = false }) {
   return (
     <Card className="animated-enter border-slate-900/10 p-5 transition-colors duration-300 dark:border-white/10 sm:p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -21,37 +21,57 @@ export function FinanceChart({ data, balanceLabel }) {
 
       <div className="mt-5 h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} barSize={52}>
-            <CartesianGrid stroke="rgba(148,163,184,0.14)" vertical={false} />
-            <XAxis
-              dataKey="name"
-              tick={{ fill: '#94a3b8', fontSize: 13 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tickFormatter={(value) => formatCurrency(value)}
-              tick={{ fill: '#64748b', fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-              width={96}
-            />
-            <Tooltip
-              cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-              contentStyle={{
-                borderRadius: '20px',
-                border: '1px solid rgba(148, 163, 184, 0.15)',
-                background: 'rgba(15, 23, 42, 0.98)',
-                boxShadow: '0 24px 60px rgba(0, 0, 0, 0.35)',
-              }}
-              formatter={(value) => formatCurrency(value)}
-            />
-            <Bar dataKey="value" radius={[18, 18, 8, 8]}>
-              {data.map((entry) => (
-                <Cell key={entry.name} fill={entry.color} />
-              ))}
-            </Bar>
-          </BarChart>
+          {isPremium ? (
+            <BarChart data={data} barSize={32}>
+              <CartesianGrid stroke="rgba(148,163,184,0.14)" vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 13 }} axisLine={false} tickLine={false} />
+              <YAxis tickFormatter={(value) => formatCurrency(value)} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} width={96} />
+              <Tooltip
+                cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                contentStyle={{
+                  borderRadius: '20px',
+                  border: '1px solid rgba(148, 163, 184, 0.15)',
+                  background: 'rgba(15, 23, 42, 0.98)',
+                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.35)',
+                }}
+                formatter={(value) => formatCurrency(value)}
+              />
+              <Bar dataKey="income" name="Receitas" radius={[18, 18, 8, 8]} fill="#5eead4" />
+              <Bar dataKey="expense" name="Despesas" radius={[18, 18, 8, 8]} fill="#fb7185" />
+            </BarChart>
+          ) : (
+            <BarChart data={data} barSize={52}>
+              <CartesianGrid stroke="rgba(148,163,184,0.14)" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: '#94a3b8', fontSize: 13 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tickFormatter={(value) => formatCurrency(value)}
+                tick={{ fill: '#64748b', fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+                width={96}
+              />
+              <Tooltip
+                cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                contentStyle={{
+                  borderRadius: '20px',
+                  border: '1px solid rgba(148, 163, 184, 0.15)',
+                  background: 'rgba(15, 23, 42, 0.98)',
+                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.35)',
+                }}
+                formatter={(value) => formatCurrency(value)}
+              />
+              <Bar dataKey="value" radius={[18, 18, 8, 8]}>
+                {data.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          )}
         </ResponsiveContainer>
       </div>
     </Card>

@@ -3,12 +3,13 @@ import { motion } from 'framer-motion'
 
 const MotionButton = motion.button
 
-export function SocialAuthButton({ icon, label, className, delay = 0 }) {
+export function SocialAuthButton({ icon, label, onClick, className, delay = 0 }) {
   const SocialIcon = icon
 
   return (
     <MotionButton
       type="button"
+      onClick={onClick}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay }}

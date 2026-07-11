@@ -165,6 +165,12 @@ export function UploadInvoiceModal({ open, onClose, onImport }) {
             onRemove={invoice.removeItem}
           />
 
+          {invoice.error && (
+            <div className="rounded-2xl border border-rose-400/20 bg-rose-400/[0.06] p-3 text-sm text-rose-600 dark:border-rose-400/15 dark:text-rose-300">
+              {invoice.error}
+            </div>
+          )}
+
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button variant="ghost" onClick={handleClose}>
               Cancelar

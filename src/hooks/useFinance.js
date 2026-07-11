@@ -6,6 +6,9 @@ import { useLocalStorage } from '@/hooks/useLocalStorage'
 import {
   buildCategoryFilters,
   buildChartData,
+  buildMonthlyForecast,
+  buildPremiumTrendData,
+  buildSpendingInsights,
   calculateSummary,
   filterTransactions,
   sortTransactionsByDate,
@@ -38,6 +41,9 @@ export function useFinance() {
   const summary = calculateSummary(orderedTransactions)
   const chartData = buildChartData(summary)
   const categoryFilters = buildCategoryFilters(orderedTransactions)
+  const premiumChartData = buildPremiumTrendData(orderedTransactions)
+  const spendingInsights = buildSpendingInsights(orderedTransactions)
+  const monthlyForecast = buildMonthlyForecast(orderedTransactions)
 
   const displayBalance = customBalance != null ? customBalance : summary.balance
   const formattedDisplayBalance = formatCurrency(displayBalance)
@@ -76,6 +82,9 @@ export function useFinance() {
     visibleTransactions,
     summary,
     chartData,
+    premiumChartData,
+    spendingInsights,
+    monthlyForecast,
     categoryFilters,
     selectedCategory,
     setSelectedCategory,

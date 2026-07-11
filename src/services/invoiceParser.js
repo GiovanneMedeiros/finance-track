@@ -84,8 +84,9 @@ export async function parseInvoiceFile(file) {
   return rawItems.map((item) => ({
     id: crypto.randomUUID(),
     title: item.title,
+    description: item.originalDescription,
     originalDescription: item.originalDescription,
-    amount: item.amount,
+    amount: Number(item.amount),
     type: 'expense',
     category: guessCategory(item.title),
     date: item.date,

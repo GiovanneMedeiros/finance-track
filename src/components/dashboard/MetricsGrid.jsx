@@ -2,12 +2,12 @@ import { Landmark, TrendingDown, TrendingUp } from 'lucide-react'
 
 import { SummaryCard } from '@/components/dashboard/SummaryCard'
 
-export function MetricsGrid({ summary }) {
+export function MetricsGrid({ summary, displayBalance }) {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       <SummaryCard
         title="Saldo atual"
-        value={summary.formattedBalance}
+        value={displayBalance || summary.formattedBalance}
         accent="#34d399"
         icon={Landmark}
         trend={12}

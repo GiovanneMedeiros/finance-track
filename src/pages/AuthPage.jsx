@@ -11,8 +11,9 @@ const initialLoginValues = {
 
 const MotionContainer = motion.div
 
-export function AuthPage({ onAuthenticate }) {
+export function AuthPage({ onAuthenticate, authError, isSubmitting }) {
   const [loginValues, setLoginValues] = useState(initialLoginValues)
+  const [localError, setLocalError] = useState(null)
   const [formHighlight, setFormHighlight] = useState(false)
   const formPanelRef = useRef(null)
   const emailInputRef = useRef(null)
@@ -26,14 +27,31 @@ export function AuthPage({ onAuthenticate }) {
     }, 800)
   }, [])
 
+  const handleWorkspaceLogin = useCallback(() => {
+    formPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setLocalError('Use o e-mail e a senha da sua Workspace para continuar.')
+    setFormHighlight(true)
+    setTimeout(() => {
+      emailInputRef.current?.focus()
+      setFormHighlight(false)
+    }, 800)
+  }, [])
+
   const updateLoginField = (field, value) => {
+    setLocalError(null)
     setLoginValues((current) => ({ ...current, [field]: value }))
   }
 
   const handleLoginSubmit = (event) => {
     event.preventDefault()
+    setLocalError(null)
     onAuthenticate({ type: 'login', values: loginValues })
   }
+
+  const handleCreateAccount = useCallback(() => {
+    setLocalError(null)
+    onAuthenticate({ type: 'register', values: loginValues })
+  }, [loginValues, onAuthenticate])
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f6f1e8_0%,#efe7da_42%,#e7dece_100%)] px-4 py-5 transition-colors duration-500 dark:bg-[linear-gradient(180deg,#101114_0%,#15171d_42%,#0a0b0f_100%)] sm:px-6 sm:py-6 lg:px-8">
@@ -61,6 +79,10 @@ export function AuthPage({ onAuthenticate }) {
               loginValues={loginValues}
               onLoginChange={updateLoginField}
               onLoginSubmit={handleLoginSubmit}
+              onCreateAccount={handleCreateAccount}
+              onWorkspaceLogin={handleWorkspaceLogin}
+              authError={localError || authError}
+              isSubmitting={isSubmitting}
             />
           </div>
         </div>

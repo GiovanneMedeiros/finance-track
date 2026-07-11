@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { CATEGORIES } from '@/constants/categories'
 import { Button } from '@/components/ui/Button'
@@ -22,14 +22,31 @@ const getInitialValues = () => ({
   date: new Date().toISOString().slice(0, 10),
 })
 
-export function AddTransactionForm({ onSubmit, onCancel }) {
-  const [values, setValues] = useState(getInitialValues)
+export function AddTransactionForm({ onSubmit, onCancel, initialValues }) {
+  const [values, setValues] = useState(() => ({
+    ...getInitialValues(),
+    ...initialValues,
+    amount: initialValues?.amount != null ? String(initialValues.amount) : '',
+  }))
   const [errors, setErrors] = useState({})
 
   const updateField = (field, value) => {
     setValues((current) => ({ ...current, [field]: value }))
     setErrors((current) => ({ ...current, [field]: '' }))
   }
+
+  useEffect(() => {
+    if (!initialValues) {
+      setValues(getInitialValues())
+      return
+    }
+
+    setValues({
+      ...getInitialValues(),
+      ...initialValues,
+      amount: initialValues.amount != null ? String(initialValues.amount) : '',
+    })
+  }, [initialValues])
 
   const handleSubmit = (event) => {
     event.preventDefault()
