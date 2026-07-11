@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -9,7 +9,7 @@ const typeStyles = {
   expense: 'bg-rose-300/12 text-rose-200',
 }
 
-export function TransactionList({ transactions, onRemove }) {
+export function TransactionList({ transactions, onRemove, onEdit }) {
   return (
     <Card className="animated-enter border-slate-900/10 p-5 transition-colors duration-300 dark:border-white/10 sm:p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -58,15 +58,27 @@ export function TransactionList({ transactions, onRemove }) {
                 {formatCurrency(transaction.amount)}
               </strong>
 
-              <Button
-                aria-label={`Remover ${transaction.title}`}
-                size="icon"
-                variant="ghost"
-                className="text-[var(--text-secondary)] hover:text-rose-200"
-                onClick={() => onRemove(transaction.id)}
-              >
-                <Trash2 size={16} />
-              </Button>
+              <div className="flex items-center gap-2">
+                {onEdit ? (
+                  <Button
+                    aria-label={`Editar ${transaction.title}`}
+                    size="icon"
+                    variant="secondary"
+                    onClick={() => onEdit(transaction)}
+                  >
+                    <Pencil size={16} />
+                  </Button>
+                ) : null}
+                <Button
+                  aria-label={`Remover ${transaction.title}`}
+                  size="icon"
+                  variant="ghost"
+                  className="text-[var(--text-secondary)] hover:text-rose-200"
+                  onClick={() => onRemove(transaction.id)}
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
             </div>
           </article>
         ))}

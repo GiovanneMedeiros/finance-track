@@ -17,7 +17,7 @@ function centsToDisplay(cents) {
 const STEPS = { FORM: 'form', SAVING: 'saving', SUCCESS: 'success' }
 const MAX_CENTS = 99_999_999 // R$ 999.999,99
 
-export function EditBalanceModal({ open, currentBalance, onSave, onClose }) {
+export function EditBalanceModal({ open, currentBalance, onSave, onClose, onChange }) {
   const [rawCents, setRawCents] = useState(0)
   const [isNegative, setIsNegative] = useState(false)
   const [step, setStep] = useState(STEPS.FORM)
@@ -57,19 +57,20 @@ export function EditBalanceModal({ open, currentBalance, onSave, onClose }) {
     if (cents > MAX_CENTS) return
 
     setRawCents(cents)
-    if (hasNeg) {
-      setIsNegative((prev) => !prev)
-    }
+    setIsNegative(hasNeg)
+    onChange?.((hasNeg ? -cents : cents) / 100)
   }
 
   const handleKeyDown = (e) => {
     if (e.key === '-') {
       e.preventDefault()
-      setIsNegative((prev) => !prev)
+      const nextNegative = !isNegative
+      setIsNegative(nextNegative)
+      onChange?.((nextNegative ? -rawCents : rawCents) / 100)
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (rawCents === 0) {
@@ -85,11 +86,18 @@ export function EditBalanceModal({ open, currentBalance, onSave, onClose }) {
 
     setStep(STEPS.SAVING)
 
-    setTimeout(() => {
+    try {
       const value = signedCents / 100
-      onSave(value)
+      await onSave(value)
+      
+      // Small delay for visual feedback
+      await new Promise(resolve => setTimeout(resolve, 600))
+      
       setStep(STEPS.SUCCESS)
-    }, 600)
+    } catch (err) {
+      setError(err?.message || 'Erro ao salvar saldo')
+      setStep(STEPS.FORM)
+    }
   }
 
   const handleClose = () => {

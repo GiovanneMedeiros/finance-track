@@ -58,7 +58,7 @@ export function useInvoiceImport({ onImport }) {
     setParsedItems((current) => current.filter((item) => item.id !== itemId))
   }, [])
 
-  const confirmImport = useCallback(() => {
+  const confirmImport = useCallback(async () => {
     const selectedItems = parsedItems
       .filter((item) => item.selected)
       .map(({ selected, ...transaction }) => transaction)
@@ -68,12 +68,18 @@ export function useInvoiceImport({ onImport }) {
     }
 
     setStep(STEPS.IMPORTING)
+    setError(null)
 
-    // Small delay for visual feedback
-    setTimeout(() => {
-      onImport(selectedItems)
-      setStep(STEPS.DONE)
-    }, 600)
+    try {
+      await onImport(selectedItems)
+      // Small delay for visual feedback
+      setTimeout(() => {
+        setStep(STEPS.DONE)
+      }, 600)
+    } catch (importError) {
+      setError(importError?.message || 'Falha ao importar a fatura.')
+      setStep(STEPS.REVIEW)
+    }
   }, [onImport, parsedItems])
 
   const selectedCount = parsedItems.filter((item) => item.selected).length

@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, KeyRound, Mail, ShieldCheck, Sparkles, Stars } from 'lucide-react'
 
 import { AuthField } from '@/components/auth/AuthField'
-import { SocialAuthButton } from '@/components/auth/SocialAuthButton'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Button } from '@/components/ui/Button'
 
@@ -11,7 +10,16 @@ const MotionDiv = motion.div
 const MotionForm = motion.form
 
 export const AuthFormPanel = forwardRef(function AuthFormPanel(
-  { loginValues, onLoginChange, onLoginSubmit, emailInputRef, highlight },
+  {
+    loginValues,
+    onLoginChange,
+    onLoginSubmit,
+    onCreateAccount,
+    emailInputRef,
+    highlight,
+    authError,
+    isSubmitting,
+  },
   ref,
 ) {
   return (
@@ -76,21 +84,11 @@ export const AuthFormPanel = forwardRef(function AuthFormPanel(
         <MotionDiv
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12, duration: 0.4 }}
-          className="grid gap-3 sm:grid-cols-2"
-        >
-          <SocialAuthButton icon={Sparkles} label="Entrar com Workspace" delay={0.04} />
-          <SocialAuthButton icon={Stars} label="Entrar com Private Key" delay={0.08} />
-        </MotionDiv>
-
-        <MotionDiv
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.16, duration: 0.4 }}
           className="flex items-center gap-3 text-xs uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500"
         >
           <span className="h-px flex-1 bg-slate-900/10 dark:bg-white/10" />
-          ou acesse com e-mail
+          Acesse com seu e-mail abaixo
           <span className="h-px flex-1 bg-slate-900/10 dark:bg-white/10" />
         </MotionDiv>
 
@@ -158,12 +156,36 @@ export const AuthFormPanel = forwardRef(function AuthFormPanel(
             >
               <Button
                 type="submit"
+                disabled={isSubmitting}
                 className="h-14 w-full rounded-2xl bg-[#17130f] text-sm font-semibold text-[#f7efe4] shadow-[0_22px_50px_rgba(23,19,15,0.18)] hover:bg-[#231d18] dark:bg-[#f1e7da] dark:text-[#17130f] dark:hover:bg-[#e3d5c3] sm:h-15 sm:rounded-[24px]"
               >
-                Entrar
+                {isSubmitting ? 'Entrando...' : 'Entrar'}
                 <ArrowRight size={18} />
               </Button>
             </MotionDiv>
+
+            <MotionDiv
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.32, duration: 0.42 }}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <Button
+                type="button"
+                variant="secondary"
+                className="h-14 w-full rounded-2xl text-sm font-semibold sm:h-15 sm:rounded-[24px]"
+                onClick={onCreateAccount}
+              >
+                Criar conta
+              </Button>
+            </MotionDiv>
+
+            {authError ? (
+              <div className="rounded-2xl border border-rose-300/40 bg-rose-50/80 p-3 text-sm text-rose-700 dark:border-rose-400/30 dark:bg-rose-950/10 dark:text-rose-200">
+                {authError}
+              </div>
+            ) : null}
 
             <MotionDiv
               initial={{ opacity: 0, y: 18 }}
@@ -171,7 +193,7 @@ export const AuthFormPanel = forwardRef(function AuthFormPanel(
               transition={{ delay: 0.34, duration: 0.42 }}
               className="rounded-2xl border border-black/8 bg-white/58 p-3.5 text-xs leading-relaxed text-slate-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 sm:rounded-[24px] sm:p-4 sm:text-sm"
             >
-              Use qualquer e-mail e senha para continuar no fluxo demo. Depois, essa estrutura pode ser ligada a autenticação real sem alterar a linguagem visual.
+              Ao enviar o formulário, o sistema tentará fazer login. Se a conta não existir ainda, ela será criada automaticamente.
             </MotionDiv>
           </MotionForm>
         </AnimatePresence>

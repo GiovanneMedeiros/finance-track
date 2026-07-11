@@ -16,61 +16,69 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { NavLink } from 'react-router-dom'
 
 import { Button } from '@/components/ui/Button'
+import { PremiumBadge } from '@/components/ui/PremiumBadge'
 
 const navGroups = [
   {
     title: 'Principal',
     items: [
-      { label: 'Dashboard', icon: LayoutDashboard, active: true },
-      { label: 'Transacoes', icon: ArrowUpDown },
-      { label: 'Cartoes', icon: CreditCard },
-      { label: 'Faturas', icon: FileText },
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+      { label: 'Transações', icon: ArrowUpDown, path: '/transactions' },
+      { label: 'Cartões', icon: CreditCard, path: '/cards', premium: true },
+      { label: 'Faturas', icon: FileText, path: '/invoices' },
     ],
   },
   {
-    title: 'Gestao',
+    title: 'Gestão',
     items: [
-      { label: 'Planejamento', icon: PiggyBank },
-      { label: 'Metas', icon: Target },
-      { label: 'Categorias', icon: Tag },
-      { label: 'Relatorios', icon: BarChart3 },
+      { label: 'Planejamento', icon: PiggyBank, path: '/planning', premium: true },
+      { label: 'Metas', icon: Target, path: '/goals', premium: true },
+      { label: 'Categorias', icon: Tag, path: '/categories' },
+      { label: 'Relatórios', icon: BarChart3, path: '/reports', premium: true },
     ],
   },
   {
     title: 'Sistema',
     items: [
-      { label: 'Importacoes', icon: Import },
-      { label: 'Configuracoes', icon: Settings },
+      { label: 'Importações', icon: Import, path: '/imports' },
+      { label: 'Configurações', icon: Settings, path: '/settings' },
     ],
   },
 ]
 
-function NavItem({ label, icon: Icon, active }) {
+function NavItem({ label, icon: Icon, path, premium }) {
   return (
-    <button
-      type="button"
-      className={[
+    <NavLink
+      to={path}
+      className={({ isActive }) => [
         'group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200',
-        active
+        isActive
           ? 'bg-slate-900/[0.07] text-slate-950 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.06)] dark:bg-white/[0.08] dark:text-white dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]'
           : 'text-[var(--text-secondary)] hover:bg-slate-900/[0.04] hover:text-slate-950 dark:hover:bg-white/[0.05] dark:hover:text-white',
       ].join(' ')}
     >
-      <Icon
-        size={16}
-        className={
-          active
-            ? 'text-emerald-600 dark:text-emerald-400'
-            : 'opacity-50 transition group-hover:opacity-100'
-        }
-      />
-      <span>{label}</span>
-      {active && (
-        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-500" />
+      {({ isActive }) => (
+        <>
+          <Icon
+            size={16}
+            className={
+              isActive
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'opacity-50 transition group-hover:opacity-100'
+            }
+          />
+          <span>{label}</span>
+          {premium ? (
+            <PremiumBadge compact className="ml-auto" />
+          ) : isActive ? (
+            <span className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          ) : null}
+        </>
       )}
-    </button>
+    </NavLink>
   )
 }
 
@@ -89,7 +97,7 @@ function NavGroup({ title, items }) {
   )
 }
 
-export function Sidebar({ balanceLabel, formattedIncome, formattedExpense, onOpenModal, onEditBalance, monthlyGoal, onEditGoal }) {
+export function Sidebar({ balanceLabel, formattedIncome, formattedExpense, onOpenModal, onEditBalance, monthlyGoal, onEditGoal, plan, isPremium, onOpenPremium }) {
   const [balanceFlash, setBalanceFlash] = useState(false)
   const prevBalanceRef = useRef(balanceLabel)
 
@@ -175,6 +183,20 @@ export function Sidebar({ balanceLabel, formattedIncome, formattedExpense, onOpe
           <NavGroup key={group.title} {...group} />
         ))}
       </nav>
+
+      <div className="mt-5 rounded-[1.75rem] border border-emerald-300/15 bg-slate-950/5 p-4 text-center dark:border-white/10 dark:bg-white/5">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-700/80 dark:text-emerald-200/70">
+          {isPremium ? 'Premium ativo' : 'Plano Free'}
+        </p>
+        <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">
+          {isPremium
+            ? 'Aproveite relatórios avançados, previsão e alertas na sua conta.'
+            : 'Desbloqueie recursos como previsões, metas avançadas e análises inteligentes.'}
+        </p>
+        <Button className="mt-4 w-full" onClick={onOpenPremium}>
+          {isPremium ? 'Gerenciar Premium' : 'Assinar Premium'}
+        </Button>
+      </div>
 
       {/* ── Spacer ── */}
       <div className="flex-1" />
