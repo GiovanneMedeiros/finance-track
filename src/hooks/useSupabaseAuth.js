@@ -39,8 +39,10 @@ export function useSupabaseAuth() {
     }
   }, [])
 
+  // signIn/signUp/resetPassword do not toggle `loading`: that flag gates the whole
+  // app on the initial session check, and flipping it here would unmount the auth form.
+  // Their errors are returned to the caller (the form shows them) instead of stored in `error`.
   const signIn = useCallback(async ({ email, password }) => {
-    setLoading(true)
     setError(null)
 
     const { data, error: authError } = await supabase.auth.signInWithPassword({
@@ -48,10 +50,7 @@ export function useSupabaseAuth() {
       password,
     })
 
-    setLoading(false)
-
     if (authError) {
-      setError(authError.message)
       return { error: authError }
     }
 
@@ -61,26 +60,37 @@ export function useSupabaseAuth() {
     return { data }
   }, [])
 
-  const signUp = useCallback(async ({ email, password }) => {
-    setLoading(true)
+  const signUp = useCallback(async ({ name, email, password }) => {
     setError(null)
 
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: name ? { data: { full_name: name } } : undefined,
     })
 
-    setLoading(false)
-
     if (signUpError) {
-      setError(signUpError.message)
       return { error: signUpError }
     }
 
+    // With email confirmation enabled Supabase returns a user but no session:
+    // the account exists but the person must confirm before signing in.
     setSession(data.session)
-    setUser(data.user)
+    setUser(data.session ? data.user : null)
 
-    return { data }
+    return { data, needsConfirmation: !data.session }
+  }, [])
+
+  const resetPassword = useCallback(async ({ email }) => {
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    })
+
+    if (resetError) {
+      return { error: resetError }
+    }
+
+    return {}
   }, [])
 
   const signOut = useCallback(async () => {
@@ -109,5 +119,6 @@ export function useSupabaseAuth() {
     signIn,
     signUp,
     signOut,
+    resetPassword,
   }
 }

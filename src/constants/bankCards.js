@@ -1,0 +1,58 @@
+export const bankCards = [
+  {
+    id: 'nubank',
+    bank: 'Nubank',
+    tier: 'Ultravioleta',
+    last4: '4821',
+    holder: 'MARINA COSTA',
+    expiry: '09/31',
+    background:
+      'radial-gradient(120% 140% at 0% 0%, #b44cf0 0%, transparent 45%), linear-gradient(135deg, #8a05be 0%, #6a0a9e 45%, #3d0663 100%)',
+    text: '#fdf6ff',
+    accent: 'rgba(255,255,255,0.18)',
+    wordmark: 'font-bold lowercase tracking-tight text-[1.9em]',
+    label: 'nu',
+  },
+  {
+    id: 'picpay',
+    bank: 'PicPay',
+    tier: 'Black',
+    last4: '7310',
+    holder: 'MARINA COSTA',
+    expiry: '03/30',
+    background:
+      'radial-gradient(120% 140% at 100% 0%, #5bf2a4 0%, transparent 42%), linear-gradient(135deg, #21c25e 0%, #11a64f 50%, #0a6e36 100%)',
+    text: '#f2fff7',
+    accent: 'rgba(255,255,255,0.2)',
+    wordmark: 'font-bold tracking-tight text-[1.35em]',
+    label: 'PicPay',
+  },
+  {
+    id: 'c6',
+    bank: 'C6 Bank',
+    tier: 'Carbon',
+    last4: '0096',
+    holder: 'MARINA COSTA',
+    expiry: '11/29',
+    background:
+      'repeating-linear-gradient(45deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 6px), radial-gradient(120% 140% at 0% 100%, #3a3a3a 0%, transparent 50%), linear-gradient(135deg, #2a2a2a 0%, #141414 55%, #050505 100%)',
+    text: '#f5f5f5',
+    accent: 'rgba(255,255,255,0.12)',
+    wordmark: 'font-bold tracking-tight text-[1.45em]',
+    label: 'C6',
+  },
+  {
+    id: 'inter',
+    bank: 'Inter',
+    tier: 'Gold',
+    last4: '5527',
+    holder: 'MARINA COSTA',
+    expiry: '06/32',
+    background:
+      'radial-gradient(120% 140% at 100% 100%, #ffb36b 0%, transparent 45%), linear-gradient(135deg, #ff8a1f 0%, #ff6d00 50%, #e04f00 100%)',
+    text: '#fffaf5',
+    accent: 'rgba(255,255,255,0.2)',
+    wordmark: 'font-bold lowercase tracking-tight text-[1.5em]',
+    label: 'inter',
+  },
+]

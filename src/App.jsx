@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
+import { translateAuthError } from '@/utils/authErrors'
 import { AuthPage } from '@/pages/AuthPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { TransactionsPage } from '@/pages/TransactionsPage'
@@ -16,40 +17,37 @@ import { SettingsPage } from '@/pages/SettingsPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
 function App() {
-  const { user, loading, signIn, signUp, signOut, error: authError } = useSupabaseAuth()
+  const { user, loading, signIn, signUp, signOut, resetPassword, error: authError } = useSupabaseAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [loginError, setLoginError] = useState(null)
 
+  // Returns { error } or { success } so the form can show the outcome in place.
   const handleAuthenticate = async ({ type, values }) => {
-    setLoginError(null)
     setIsSubmitting(true)
 
-    const { email, password } = values
-
-    if (type === 'register') {
-      const signUpResult = await signUp({ email, password })
-      if (signUpResult.error) {
-        setLoginError(signUpResult.error.message)
-      }
-      setIsSubmitting(false)
-      return
-    }
-
-    const signInResult = await signIn({ email, password })
-
-    if (signInResult.error) {
-      if (signInResult.error.message.toLowerCase().includes('invalid login credentials')) {
-        const signUpResult = await signUp({ email, password })
-
-        if (signUpResult.error) {
-          setLoginError(signUpResult.error.message)
+    try {
+      if (type === 'register') {
+        const result = await signUp(values)
+        if (result.error) return { error: translateAuthError(result.error) }
+        if (result.needsConfirmation) {
+          return { success: `Conta criada! Enviamos um link de confirmação para ${values.email}.` }
         }
-      } else {
-        setLoginError(signInResult.error.message)
+        return {}
       }
-    }
 
-    setIsSubmitting(false)
+      if (type === 'forgot') {
+        const result = await resetPassword(values)
+        if (result.error) return { error: translateAuthError(result.error) }
+        return { success: `Se existir uma conta com ${values.email}, você receberá um link para redefinir a senha.` }
+      }
+
+      const result = await signIn(values)
+      if (result.error) return { error: translateAuthError(result.error) }
+      return {}
+    } catch (unexpected) {
+      return { error: translateAuthError(unexpected) }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (loading) {
@@ -65,7 +63,7 @@ function App() {
       <BrowserRouter>
         <AuthPage
           onAuthenticate={handleAuthenticate}
-          authError={loginError || authError}
+          authError={translateAuthError(authError)}
           isSubmitting={isSubmitting}
         />
       </BrowserRouter>

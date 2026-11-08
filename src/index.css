@@ -237,3 +237,104 @@ html.theme-transition *::after {
     transform: scale(1);
   }
 }
+
+/* ---------- Auth / landing animations ---------- */
+.aurora {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.aurora-1 {
+  top: -10%;
+  left: -8%;
+  width: 46vw;
+  height: 46vw;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.55), transparent 65%);
+  animation: auroraDrift 18s ease-in-out infinite;
+}
+
+.aurora-2 {
+  top: 8%;
+  right: -12%;
+  width: 40vw;
+  height: 40vw;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.45), transparent 65%);
+  animation: auroraDrift 22s ease-in-out infinite reverse;
+}
+
+.aurora-3 {
+  top: 55%;
+  left: 30%;
+  width: 36vw;
+  height: 36vw;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.3), transparent 65%);
+  animation: auroraDrift 26s ease-in-out infinite;
+}
+
+.dark .aurora {
+  opacity: 0.35;
+}
+
+@keyframes auroraDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(6vw, 4vh, 0) scale(1.1); }
+  66% { transform: translate3d(-4vw, 8vh, 0) scale(0.95); }
+}
+
+.marquee {
+  animation: marquee 40s linear infinite;
+}
+
+.marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.card-sheen {
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.22) 45%, transparent 60%);
+  background-size: 250% 100%;
+  animation: sheen 6s ease-in-out infinite;
+}
+
+@keyframes sheen {
+  0%, 60% { background-position: 150% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.btn-shine {
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: sheen 3.5s ease-in-out infinite;
+}
+
+.form-border {
+  background: conic-gradient(from var(--border-angle), #10b981, #8b5cf6, #f97316, #22c55e, #10b981);
+  animation: borderSpin 8s linear infinite;
+}
+
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes borderSpin {
+  to { --border-angle: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora,
+  .marquee,
+  .card-sheen,
+  .btn-shine,
+  .form-border {
+    animation: none;
+  }
+}
