@@ -1,199 +1,193 @@
-import { motion } from 'framer-motion'
-import {
-  ArrowUpRight,
-  Fingerprint,
-  LockKeyhole,
-  Sparkles,
-  Stars,
-  Zap,
-} from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, animate, motion, useInView } from 'framer-motion'
+import { ArrowRight, PlayCircle, ShieldCheck, Sparkles } from 'lucide-react'
+
+import { CardStack } from '@/components/auth/CardStack'
 
 const MotionDiv = motion.div
 const MotionSpan = motion.span
 
-const detailCards = [
-  {
-    index: '01',
-    title: 'Visão completa das suas finanças',
-    text: 'Centralize faturas, gastos e saldo em um único painel para decidir com mais segurança.',
-  },
-  {
-    index: '02',
-    title: 'Importação inteligente de faturas',
-    text: 'Envie a fatura do cartão e o sistema organiza os lançamentos por categoria automaticamente.',
-  },
-  {
-    index: '03',
-    title: 'Controle que gera resultado',
-    text: 'Acompanhe o saldo disponível em tempo real e ganhe previsibilidade para gastar melhor.',
-  },
-]
-
 const stats = [
-  { label: 'confiança percebida', value: '96%' },
-  { label: 'tempo de leitura', value: '08s' },
-  { label: 'fricção reduzida', value: '-42%' },
+  { value: 48, suffix: 'k+', label: 'faturas importadas' },
+  { value: 2.3, suffix: 'M', prefix: 'R$ ', decimals: 1, label: 'economizados/mês' },
+  { value: 4.9, suffix: '★', decimals: 1, label: 'avaliação média' },
 ]
 
-export function AuthHeroPanel({ onAccessClick }) {
+function Counter({ value, prefix = '', suffix = '', decimals = 0 }) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true })
+
+  useEffect(() => {
+    if (!inView || !ref.current) return undefined
+    const controls = animate(0, value, {
+      duration: 1.8,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: (latest) => {
+        if (ref.current) {
+          ref.current.textContent = `${prefix}${latest.toLocaleString('pt-BR', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals,
+          })}${suffix}`
+        }
+      },
+    })
+    return () => controls.stop()
+  }, [inView, value, prefix, suffix, decimals])
+
+  return <span ref={ref}>{prefix}0{suffix}</span>
+}
+
+const words = ['Nubank', 'PicPay', 'C6 Bank', 'Inter']
+const wordColors = ['#a855f7', '#22c55e', '#94a3b8', '#ff7a00']
+
+function RotatingWord() {
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    const id = window.setInterval(() => setIndex((i) => (i + 1) % words.length), 3200)
+    return () => window.clearInterval(id)
+  }, [])
+
   return (
-    <div className="relative flex flex-col justify-between gap-8 overflow-hidden rounded-[32px] border border-black/8 bg-[linear-gradient(180deg,rgba(255,252,247,0.92),rgba(242,235,224,0.84))] p-6 shadow-[0_32px_100px_rgba(56,44,28,0.12)] dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(19,20,24,0.96),rgba(13,14,18,0.88))] sm:rounded-[36px] sm:p-8 lg:p-10">
-      {/* Decorative overlays */}
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),transparent_30%,transparent_70%,rgba(255,255,255,0.08))] dark:bg-[linear-gradient(135deg,rgba(255,255,255,0.02),transparent_35%,transparent_68%,rgba(255,255,255,0.02))]" />
-      <div className="pointer-events-none absolute -right-20 -top-20 h-[280px] w-[280px] rounded-full bg-[radial-gradient(circle,rgba(185,139,92,0.1),transparent_70%)] dark:bg-[radial-gradient(circle,rgba(185,139,92,0.06),transparent_70%)]" />
-      <div className="pointer-events-none absolute -bottom-16 -left-16 h-[220px] w-[220px] rounded-full bg-[radial-gradient(circle,rgba(185,139,92,0.06),transparent_70%)] dark:bg-[radial-gradient(circle,rgba(185,139,92,0.04),transparent_70%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-[72px] h-px bg-[linear-gradient(90deg,transparent,rgba(15,23,42,0.06),rgba(15,23,42,0.1),rgba(15,23,42,0.06),transparent)] dark:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.04),rgba(255,255,255,0.07),rgba(255,255,255,0.04),transparent)] sm:top-[84px]" />
+    <span className="inline-flex overflow-hidden align-bottom">
+      <AnimatePresence mode="wait" initial={false}>
+        <MotionSpan
+          key={words[index]}
+          className="inline-block whitespace-nowrap font-semibold"
+          style={{ color: wordColors[index] }}
+          initial={{ y: '100%', opacity: 0 }}
+          animate={{ y: '0%', opacity: 1 }}
+          exit={{ y: '-100%', opacity: 0 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {words[index]}
+        </MotionSpan>
+      </AnimatePresence>
+    </span>
+  )
+}
 
-      {/* Top header area */}
-      <div className="relative z-10 space-y-5 sm:space-y-6">
-        {/* Row 1: Primary badge + action button */}
-        <div className="flex items-center justify-between gap-4">
-          <MotionDiv
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          >
-            <span className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-full border border-[#b98b5c]/20 bg-[linear-gradient(135deg,rgba(185,139,92,0.08),rgba(185,139,92,0.03))] px-4 py-2 text-[10px] uppercase tracking-[0.3em] text-[#8c6641] backdrop-blur-sm dark:border-[#d4b08a]/15 dark:bg-[linear-gradient(135deg,rgba(212,176,138,0.08),rgba(212,176,138,0.02))] dark:text-[#d4b08a] sm:text-[11px]">
-              <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(185,139,92,0.06),transparent)] dark:bg-[linear-gradient(90deg,transparent,rgba(212,176,138,0.04),transparent)]" />
-              <MotionSpan
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                className="relative"
-              >
-                <Zap size={13} className="drop-shadow-[0_0_4px_rgba(185,139,92,0.4)]" />
-              </MotionSpan>
-              <span className="relative font-medium">FinanceTrack Private Access</span>
-            </span>
-          </MotionDiv>
-
-          <MotionDiv
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            whileHover={{ scale: 1.06, y: -2 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={onAccessClick}
-            className="group relative cursor-pointer"
-          >
-            <div className="absolute -inset-1 rounded-2xl bg-[radial-gradient(circle,rgba(185,139,92,0.12),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100 dark:bg-[radial-gradient(circle,rgba(212,176,138,0.1),transparent_70%)]" />
-            <div className="relative flex items-center gap-2 rounded-2xl border border-black/8 bg-white/70 px-3.5 py-2.5 shadow-[0_8px_24px_rgba(56,44,28,0.06)] backdrop-blur-sm transition-all duration-300 group-hover:border-[#b98b5c]/20 group-hover:shadow-[0_12px_32px_rgba(56,44,28,0.1)] dark:border-white/10 dark:bg-white/[0.04] dark:group-hover:border-[#d4b08a]/20 sm:px-4 sm:py-3">
-              <Fingerprint size={16} className="text-[#9e7450] dark:text-[#d4b08a]" />
-              <span className="hidden text-[10px] font-medium uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 sm:inline">Acessar</span>
-              <ArrowUpRight size={14} className="text-[#9e7450] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 dark:text-[#d4b08a]" />
-            </div>
-          </MotionDiv>
-        </div>
-
-        {/* Row 2: Secondary badges + sequence label */}
+export function AuthHeroPanel({ onStartClick, onLearnMoreClick }) {
+  return (
+    <div className="relative grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
+      <div className="space-y-7">
         <MotionDiv
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.12 }}
-          className="flex flex-wrap items-center gap-2.5 sm:gap-3"
+          transition={{ duration: 0.5 }}
+          className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 py-1 pl-1 pr-3 text-xs font-medium text-emerald-700 dark:text-emerald-300"
         >
-          <span className="inline-flex items-center gap-2 rounded-full border border-black/6 bg-black/[0.03] px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-slate-600 backdrop-blur-sm dark:border-white/8 dark:bg-white/[0.04] dark:text-slate-300 sm:text-[11px]">
-            <Stars size={12} className="text-slate-500 dark:text-slate-400" />
-            Editorial premium system
+          <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+            Novo
           </span>
-
-          <span className="hidden h-1 w-1 rounded-full bg-slate-400/50 dark:bg-slate-500/50 sm:block" />
-
-          <MotionSpan
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 sm:text-[11px]"
-          >
-            <Sparkles size={11} className="text-[#b98b5c]/60 dark:text-[#d4b08a]/50" />
-            Identity Sequence 01
-          </MotionSpan>
+          Importação automática de faturas em PDF
+          <Sparkles size={13} />
         </MotionDiv>
-      </div>
 
-      {/* Main content */}
-      <div className="relative z-10 flex flex-1 flex-col gap-8">
+        <MotionDiv
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <h1 className="text-[2.6rem] font-bold leading-[1.02] text-slate-900 dark:text-white sm:text-6xl xl:text-[4.1rem]">
+            Todos os seus cartões.
+            <br />
+            <span className="bg-[linear-gradient(90deg,#10b981,#14b8a6,#3b82f6)] bg-clip-text text-transparent">
+              Um só painel.
+            </span>
+          </h1>
+        </MotionDiv>
+
         <MotionDiv
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="space-y-5"
+          transition={{ duration: 0.6, delay: 0.15 }}
+          className="max-w-xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg"
         >
-          <h1 className="text-3xl font-normal leading-[1.08] text-[#17130f] dark:text-white sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-[3.75rem]">
-            Uma entrada com postura institucional, não com cara de template brilhando.
-          </h1>
-
-          <p className="max-w-lg text-sm leading-relaxed text-slate-600 dark:text-slate-300 sm:text-base sm:leading-7">
-            Esta composição troca glow exagerado por estrutura, contraste e presença. O resultado fica mais raro, mais maduro e claramente separado de outras linguagens visuais do portfólio.
-          </p>
+          Conecte as faturas do <RotatingWord /> e de qualquer banco. O FinanceTrack organiza seus
+          gastos por categoria, mostra para onde vai seu dinheiro e ajuda você a bater suas metas.
         </MotionDiv>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          {stats.map((item, index) => (
+        <MotionDiv
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.25 }}
+          className="flex flex-col gap-3 sm:flex-row sm:items-center"
+        >
+          <motion.button
+            type="button"
+            onClick={onStartClick}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            className="group relative inline-flex h-13 items-center justify-center gap-2 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#10b981,#14b8a6)] px-6 text-sm font-semibold text-white shadow-[0_18px_40px_-10px_rgba(16,185,129,0.6)]"
+          >
+            <span className="btn-shine pointer-events-none absolute inset-0" />
+            Começar grátis
+            <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
+          </motion.button>
+          <motion.button
+            type="button"
+            onClick={onLearnMoreClick}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            className="inline-flex h-13 items-center justify-center gap-2 rounded-2xl border border-slate-900/10 bg-white/60 px-6 text-sm font-semibold text-slate-800 backdrop-blur transition hover:bg-white dark:border-white/10 dark:bg-white/[0.05] dark:text-white dark:hover:bg-white/[0.09]"
+          >
+            <PlayCircle size={17} />
+            Ver como funciona
+          </motion.button>
+        </MotionDiv>
+
+        <MotionDiv
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400"
+        >
+          <div className="flex -space-x-2">
+            {['#a855f7', '#22c55e', '#f97316', '#3b82f6'].map((color, i) => (
+              <span
+                key={color}
+                className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white dark:border-slate-950"
+                style={{ background: color }}
+              >
+                {['MC', 'JP', 'AL', 'RS'][i]}
+              </span>
+            ))}
+          </div>
+          <span>
+            <strong className="text-slate-800 dark:text-white">+12 mil pessoas</strong> já organizam
+            suas finanças
+          </span>
+          <ShieldCheck size={14} className="hidden text-emerald-500 sm:block" />
+        </MotionDiv>
+
+        <div className="grid grid-cols-3 gap-3">
+          {stats.map((stat, index) => (
             <MotionDiv
-              key={item.label}
+              key={stat.label}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.12 + index * 0.08, duration: 0.4 }}
-              className="rounded-2xl border border-black/8 bg-white/56 p-3 dark:border-white/10 dark:bg-white/[0.04] sm:rounded-[20px] sm:p-4"
+              transition={{ delay: 0.5 + index * 0.1 }}
+              className="rounded-2xl border border-slate-900/8 bg-white/50 p-3 backdrop-blur dark:border-white/8 dark:bg-white/[0.03] sm:p-4"
             >
-              <div className="text-lg font-semibold text-[#17130f] dark:text-white sm:text-2xl">
-                {item.value}
+              <div className="font-display text-xl font-bold text-slate-900 dark:text-white sm:text-3xl">
+                <Counter {...stat} />
               </div>
-              <div className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 sm:mt-1 sm:text-xs sm:tracking-[0.2em]">
-                {item.label}
-              </div>
+              <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 sm:text-xs">{stat.label}</div>
             </MotionDiv>
           ))}
         </div>
-
-        {/* Verification panel */}
-        <MotionDiv
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.14 }}
-          className="rounded-2xl border border-black/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.6),rgba(248,242,233,0.72))] p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02))] sm:rounded-3xl sm:p-6"
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 sm:text-[11px]">
-                FinanceTrack em foco
-              </div>
-              <div className="mt-1.5 text-base font-semibold text-[#17130f] dark:text-white sm:text-lg">
-                Seu controle financeiro com praticidade no dia a dia
-              </div>
-            </div>
-            <div className="shrink-0 rounded-xl border border-black/8 bg-white/70 p-2.5 text-[#9e7450] dark:border-white/10 dark:bg-white/[0.05] dark:text-[#d4b08a] sm:rounded-2xl sm:p-3">
-              <LockKeyhole size={16} />
-            </div>
-          </div>
-
-          <div className="mt-5 space-y-4 sm:mt-6">
-            {detailCards.map((card, index) => (
-              <MotionDiv
-                key={card.index}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.22 + index * 0.08, duration: 0.4 }}
-                className="border-t border-black/8 pt-4 first:border-t-0 first:pt-0 dark:border-white/10"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="shrink-0 text-[10px] uppercase tracking-[0.28em] text-[#9e7450] dark:text-[#d4b08a] sm:text-[11px]">
-                    {card.index}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-[#17130f] dark:text-white sm:text-base">
-                      {card.title}
-                    </div>
-                    <div className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400 sm:mt-1.5 sm:text-sm sm:leading-6">
-                      {card.text}
-                    </div>
-                  </div>
-                </div>
-              </MotionDiv>
-            ))}
-          </div>
-        </MotionDiv>
       </div>
+
+      <MotionDiv
+        initial={{ opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        className="pb-10 lg:pb-0"
+      >
+        <CardStack />
+      </MotionDiv>
+
     </div>
   )
 }
