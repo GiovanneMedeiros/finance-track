@@ -60,7 +60,7 @@ function App() {
 
   if (!user) {
     return (
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <AuthPage
           onAuthenticate={handleAuthenticate}
           authError={translateAuthError(authError)}
@@ -71,7 +71,7 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<DashboardPage onSignOut={signOut} />} />
         <Route path="/transactions" element={<TransactionsPage onSignOut={signOut} />} />

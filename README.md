@@ -91,9 +91,16 @@ npm run dev
 
 ## 🌐 Deploy
 
-O projeto está disponível online:
+O projeto está disponível no GitHub Pages:
 
-👉 https://finance-track-kappa.vercel.app/
+👉 https://giovannemedeiros.github.io/finance-track/
+
+Cada push para `main` publica o site automaticamente pelo GitHub Actions. Para habilitar:
+
+1. Em **Settings → Pages**, selecione **GitHub Actions** como fonte de publicação.
+2. Em **Settings → Secrets and variables → Actions → Variables**, crie `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` com os valores do projeto Supabase.
+
+O deploy também continua disponível pela Vercel: https://finance-track-kappa.vercel.app/.
 
 ---
 
