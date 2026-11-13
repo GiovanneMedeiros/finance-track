@@ -99,9 +99,7 @@ export function TransactionsPage({ onSignOut }) {
           isPremium={isPremium}
           onOpenPremium={() => setIsPremiumModalOpen(true)}
           onOpenModal={openNewTransaction}
-          onEditBalance={() => null}
           monthlyGoal={null}
-          onEditGoal={() => null}
         />
       }
       header={
@@ -109,7 +107,6 @@ export function TransactionsPage({ onSignOut }) {
           currentDateLabel={formatLongDate(new Date())}
           transactionCount={transactions.length}
           onOpenModal={openNewTransaction}
-          onOpenInvoice={() => null}
           onSignOut={onSignOut}
         />
       }

@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { translateAuthError } from '@/utils/authErrors'
+import { isSupabaseConfigured } from '@/services/supabaseClient'
 import { AuthPage } from '@/pages/AuthPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { TransactionsPage } from '@/pages/TransactionsPage'
@@ -22,6 +23,10 @@ function App() {
 
   // Returns { error } or { success } so the form can show the outcome in place.
   const handleAuthenticate = async ({ type, values }) => {
+    if (!isSupabaseConfigured) {
+      return { error: 'O acesso ainda não está configurado. Defina as variáveis do Supabase no ambiente de produção.' }
+    }
+
     setIsSubmitting(true)
 
     try {

@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import {
   ArrowDownLeft,
   ArrowUpDown,
@@ -15,7 +16,6 @@ import {
   Target,
   Wallet,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 
 import { Button } from '@/components/ui/Button'
@@ -49,7 +49,7 @@ const navGroups = [
   },
 ]
 
-function NavItem({ label, icon: Icon, path, premium }) {
+function NavItem({ label, icon, path, premium }) {
   return (
     <NavLink
       to={path}
@@ -62,14 +62,13 @@ function NavItem({ label, icon: Icon, path, premium }) {
     >
       {({ isActive }) => (
         <>
-          <Icon
-            size={16}
-            className={
+          {createElement(icon, {
+            size: 16,
+            className:
               isActive
                 ? 'text-emerald-600 dark:text-emerald-400'
-                : 'opacity-50 transition group-hover:opacity-100'
-            }
-          />
+                : 'opacity-50 transition group-hover:opacity-100',
+          })}
           <span>{label}</span>
           {premium ? (
             <PremiumBadge compact className="ml-auto" />
@@ -97,19 +96,7 @@ function NavGroup({ title, items }) {
   )
 }
 
-export function Sidebar({ balanceLabel, formattedIncome, formattedExpense, onOpenModal, onEditBalance, monthlyGoal, onEditGoal, plan, isPremium, onOpenPremium }) {
-  const [balanceFlash, setBalanceFlash] = useState(false)
-  const prevBalanceRef = useRef(balanceLabel)
-
-  useEffect(() => {
-    if (prevBalanceRef.current !== balanceLabel) {
-      prevBalanceRef.current = balanceLabel
-      setBalanceFlash(true)
-      const timer = setTimeout(() => setBalanceFlash(false), 700)
-      return () => clearTimeout(timer)
-    }
-  }, [balanceLabel])
-
+export function Sidebar({ balanceLabel, formattedIncome, formattedExpense, onOpenModal, onEditBalance, monthlyGoal, onEditGoal, isPremium, onOpenPremium }) {
   const goalTarget = monthlyGoal?.target ?? 0
   const goalCurrent = monthlyGoal?.current ?? 0
   const goalPercent = goalTarget > 0 ? Math.min(Math.round((goalCurrent / goalTarget) * 100), 100) : 0
@@ -143,22 +130,20 @@ export function Sidebar({ balanceLabel, formattedIncome, formattedExpense, onOpe
               Saldo disponivel
             </p>
             <strong
-              className={[
-                'mt-0.5 block truncate text-lg tracking-tight text-slate-950 transition-all duration-500 dark:text-white',
-                balanceFlash ? 'scale-105 text-emerald-500 dark:text-emerald-400' : '',
-              ].join(' ')}
+              key={balanceLabel}
+              className="balance-value mt-0.5 block truncate text-lg tracking-tight text-slate-950 dark:text-white"
             >
               {balanceLabel}
             </strong>
           </div>
-          <button
+          {onEditBalance ? <button
             type="button"
             onClick={onEditBalance}
             aria-label="Editar saldo"
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.08] text-slate-400 opacity-0 transition-all duration-200 hover:bg-white/[0.14] hover:text-emerald-300 group-hover/balance:opacity-100"
           >
             <Pencil size={12} />
-          </button>
+          </button> : null}
         </div>
 
         <div className="mt-3 flex gap-2.5">
@@ -193,7 +178,7 @@ export function Sidebar({ balanceLabel, formattedIncome, formattedExpense, onOpe
             ? 'Aproveite relatórios avançados, previsão e alertas na sua conta.'
             : 'Desbloqueie recursos como previsões, metas avançadas e análises inteligentes.'}
         </p>
-        <Button className="mt-4 w-full" onClick={onOpenPremium}>
+        <Button className="mt-4 w-full" onClick={onOpenPremium} disabled={!onOpenPremium}>
           {isPremium ? 'Gerenciar Premium' : 'Assinar Premium'}
         </Button>
       </div>
@@ -202,19 +187,19 @@ export function Sidebar({ balanceLabel, formattedIncome, formattedExpense, onOpe
       <div className="flex-1" />
 
       {/* ── Monthly goal card ── */}
-      <div className="group/goal mt-4 rounded-xl border border-slate-900/6 bg-slate-900/[0.03] p-3.5 dark:border-white/6 dark:bg-white/[0.03]">
+      {monthlyGoal ? <div className="group/goal mt-4 rounded-xl border border-slate-900/6 bg-slate-900/[0.03] p-3.5 dark:border-white/6 dark:bg-white/[0.03]">
         <div className="flex items-center gap-2 text-[var(--text-secondary)]">
           <Target size={13} className="text-emerald-500" />
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em]">Meta do mes</p>
           <div className="flex-1" />
-          <button
+          {onEditGoal ? <button
             type="button"
             onClick={onEditGoal}
             aria-label="Editar meta"
             className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/[0.06] text-slate-400 opacity-0 transition-all duration-200 hover:bg-white/[0.12] hover:text-emerald-300 group-hover/goal:opacity-100"
           >
             <Pencil size={10} />
-          </button>
+          </button> : null}
         </div>
 
         <p className="mt-2 text-[13px] text-slate-950 dark:text-white">
@@ -232,12 +217,10 @@ export function Sidebar({ balanceLabel, formattedIncome, formattedExpense, onOpe
           <span>{goalPercent}% concluido</span>
           <span>{goalCurrentLabel} / {goalTargetLabel}</span>
         </div>
-      </div>
+      </div> : null}
 
       {/* ── CTA ── */}
-      <Button className="mt-3 w-full" onClick={onOpenModal}>
-        Adicionar transacao
-      </Button>
+      {onOpenModal ? <Button className="mt-3 w-full" onClick={onOpenModal}>Adicionar transação</Button> : null}
     </aside>
   )
 }

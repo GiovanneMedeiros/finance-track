@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -17,6 +17,7 @@ export function CardFormModal({ open, card, onClose, onSave }) {
   const [formData, setFormData] = useState({
     name: '',
     bank: '',
+    network: 'credit',
     last_digits: '',
     limit: 0,
     current_usage: 0,
@@ -24,26 +25,10 @@ export function CardFormModal({ open, card, onClose, onSave }) {
     due_day: 10,
     notes: '',
     color: COLORS[0],
+    ...(card ?? {}),
   })
   const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (open && card) {
-      setFormData(card)
-    } else if (open) {
-      setFormData({
-        name: '',
-        bank: '',
-        last_digits: '',
-        limit: 0,
-        current_usage: 0,
-        closing_day: 1,
-        due_day: 10,
-        notes: '',
-        color: COLORS[0],
-      })
-    }
-  }, [open, card])
+  const [formError, setFormError] = useState('')
 
   const handleChange = useCallback((field, value) => {
     setFormData((current) => ({ ...current, [field]: value }))
@@ -51,14 +36,40 @@ export function CardFormModal({ open, card, onClose, onSave }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const closingDay = Number(formData.closing_day)
+    const paymentDay = Number(formData.due_day)
+    if (!formData.name.trim() || !formData.bank.trim()) {
+      setFormError('Informe o nome do cartão e do banco.')
+      return
+    }
+    if (!/^\d{4}$/.test(formData.last_digits)) {
+      setFormError('Informe exatamente os quatro últimos dígitos do cartão.')
+      return
+    }
+    if (
+      !Number.isFinite(Number(formData.limit))
+      || Number(formData.limit) < 0
+      || !Number.isFinite(Number(formData.current_usage))
+      || Number(formData.current_usage) < 0
+      || !Number.isInteger(closingDay)
+      || closingDay < 1
+      || closingDay > 31
+      || !Number.isInteger(paymentDay)
+      || paymentDay < 1
+      || paymentDay > 31
+    ) {
+      setFormError('Confira os valores e os dias de fechamento e vencimento.')
+      return
+    }
     setSaving(true)
+    setFormError('')
 
     try {
-      await onSave(formData)
-      setSaving(false)
+      await onSave({ ...formData, name: formData.name.trim(), bank: formData.bank.trim() })
       onClose()
     } catch (err) {
-      console.error('Erro ao salvar cartão:', err)
+      setFormError(err.message || 'Não foi possível salvar o cartão.')
+    } finally {
       setSaving(false)
     }
   }
@@ -91,6 +102,19 @@ export function CardFormModal({ open, card, onClose, onSave }) {
               value={formData.bank}
               onChange={(e) => handleChange('bank', e.target.value)}
               required
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-950 dark:text-white">Tipo</label>
+            <Input
+              as="select"
+              value={formData.network}
+              options={[
+                { value: 'credit', label: 'Crédito' },
+                { value: 'debit', label: 'Débito' },
+              ]}
+              onChange={(e) => handleChange('network', e.target.value)}
             />
           </div>
 
@@ -186,6 +210,7 @@ export function CardFormModal({ open, card, onClose, onSave }) {
           </div>
         </div>
 
+        {formError ? <p role="alert" className="text-sm text-rose-600">{formError}</p> : null}
         <div className="flex gap-3">
           <Button variant="ghost" type="button" onClick={onClose}>
             Cancelar

@@ -1,4 +1,5 @@
-import { BellDot, FileUp, LogOut, Plus, Sparkles } from 'lucide-react'
+import { createElement } from 'react'
+import { FileUp, LogOut, Plus, Sparkles } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -30,15 +31,6 @@ export function Header({ currentDateLabel, transactionCount, onOpenModal, onOpen
           <div className="flex items-center gap-2">
             <ThemeToggle />
 
-            <Button
-              size="icon"
-              variant="secondary"
-              className="h-11 w-11 rounded-2xl border border-slate-900/10 dark:border-white/10"
-              aria-label="Notificacoes"
-            >
-              <BellDot size={17} />
-            </Button>
-
             {onSignOut ? (
               <Button
                 variant="ghost"
@@ -46,32 +38,28 @@ export function Header({ currentDateLabel, transactionCount, onOpenModal, onOpen
                 onClick={onSignOut}
               >
                 <LogOut size={16} />
-                <span className="hidden sm:inline">Sair demo</span>
+                <span className="hidden sm:inline">Sair</span>
               </Button>
             ) : null}
           </div>
 
           {/* Divider */}
-          <div className="mx-0.5 hidden h-9 w-px rounded-full bg-slate-900/10 dark:bg-white/10 sm:block" />
+          {onOpenInvoice || onOpenModal ? <div className="mx-0.5 hidden h-9 w-px rounded-full bg-slate-900/10 dark:bg-white/10 sm:block" /> : null}
 
           {/* Primary actions */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              className="h-11 rounded-2xl border border-slate-900/10 dark:border-white/10"
-              onClick={onOpenInvoice}
-            >
-              <FileUp size={16} />
-              <span className="hidden sm:inline">Importar fatura</span>
-            </Button>
-
-            <Button
-              className="h-11 rounded-2xl shadow-[0_12px_28px_rgba(20,184,166,0.25)]"
-              onClick={onOpenModal}
-            >
-              <Plus size={18} strokeWidth={2.5} />
-              <span className="hidden sm:inline">Adicionar transacao</span>
-            </Button>
+            {onOpenInvoice ? (
+              <Button variant="secondary" className="h-11 rounded-2xl border border-slate-900/10 dark:border-white/10" onClick={onOpenInvoice}>
+                {createElement(FileUp, { size: 16 })}
+                <span className="hidden sm:inline">Importar fatura</span>
+              </Button>
+            ) : null}
+            {onOpenModal ? (
+              <Button className="h-11 rounded-2xl shadow-[0_12px_28px_rgba(20,184,166,0.25)]" onClick={onOpenModal}>
+                {createElement(Plus, { size: 18, strokeWidth: 2.5 })}
+                <span className="hidden sm:inline">Adicionar transação</span>
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>

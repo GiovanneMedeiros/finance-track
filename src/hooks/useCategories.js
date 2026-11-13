@@ -9,10 +9,9 @@ export function useCategories() {
   const [error, setError] = useState(null)
 
   const fetchCategories = useCallback(async () => {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     setLoading(true)
     setError(null)
-
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     if (sessionError) {
       setError(sessionError.message)
       setCategories([])
@@ -45,57 +44,59 @@ export function useCategories() {
     setLoading(true)
     setError(null)
 
-    const { data: sessionData } = await supabase.auth.getSession()
-    const userId = sessionData?.session?.user?.id
-    if (!userId) {
-      setError('Usuário não autenticado')
-      setLoading(false)
-      return
-    }
-
-    const { data, error: createError } = await categoryService.create({
-      ...category,
-      user_id: userId,
-      created_at: new Date().toISOString(),
-    })
-
-    if (createError) {
-      setError(createError.message)
-    } else {
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      const userId = sessionData?.session?.user?.id
+      if (!userId) throw new Error('Usuário não autenticado.')
+      const { data, error: createError } = await categoryService.create({
+        ...category,
+        user_id: userId,
+      })
+      if (createError) throw createError
+      if (!data) throw new Error('O banco não retornou a categoria salva.')
       setCategories((current) => [...current, data])
+      return data
+    } catch (mutationError) {
+      setError(mutationError.message || 'Não foi possível salvar a categoria.')
+      throw mutationError
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [])
 
   const updateCategory = useCallback(async (id, updates) => {
     setLoading(true)
     setError(null)
 
-    const { data, error: updateError } = await categoryService.update(id, updates)
-    if (updateError) {
-      setError(updateError.message)
+    try {
+      const { data, error: updateError } = await categoryService.update(id, updates)
+      if (updateError) throw updateError
+      if (!data) throw new Error('A categoria não foi encontrada ou não pôde ser atualizada.')
+      setCategories((current) => current.map((item) => (item.id === id ? data : item)))
+      return data
+    } catch (mutationError) {
+      setError(mutationError.message || 'Não foi possível atualizar a categoria.')
+      throw mutationError
+    } finally {
       setLoading(false)
-      return
     }
-
-    setCategories((current) => current.map((item) => (item.id === id ? data : item)))
-    setLoading(false)
-    return data
   }, [])
 
   const removeCategory = useCallback(async (id) => {
     setLoading(true)
     setError(null)
 
-    const { error: removeError } = await categoryService.remove(id)
-    if (removeError) {
-      setError(removeError.message)
+    try {
+      const { error: removeError } = await categoryService.remove(id)
+      if (removeError) throw removeError
+      setCategories((current) => current.filter((category) => category.id !== id))
+    } catch (mutationError) {
+      setError(mutationError.message || 'Não foi possível excluir a categoria.')
+      throw mutationError
+    } finally {
       setLoading(false)
-      return
     }
-
-    setCategories((current) => current.filter((category) => category.id !== id))
-    setLoading(false)
   }, [])
 
   return {

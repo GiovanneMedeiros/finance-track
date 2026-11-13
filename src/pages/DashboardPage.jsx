@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { ArrowRightLeft, Wallet2 } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { ArrowRightLeft, Sparkles, Wallet2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { AppShell } from '@/app/AppShell'
 import { AddTransactionForm } from '@/components/dashboard/AddTransactionForm'
 import { EditBalanceModal } from '@/components/dashboard/EditBalanceModal'
-import { EditGoalModal } from '@/components/dashboard/EditGoalModal'
 import { FinanceChart } from '@/components/dashboard/FinanceChart'
 import { MetricsGrid } from '@/components/dashboard/MetricsGrid'
 import { PremiumCheckoutModal } from '@/components/dashboard/PremiumCheckoutModal'
@@ -21,6 +22,7 @@ import { Modal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useCustomBalance } from '@/hooks/useCustomBalance'
 import { useTransactions } from '@/hooks/useTransactions'
+import { useMonthlyBudgets } from '@/hooks/useMonthlyBudgets'
 import { useUserPlan } from '@/hooks/useUserPlan'
 import {
   buildCategoryFilters,
@@ -37,15 +39,21 @@ function getHealthStatus(score) {
   return 'Precisa melhorar'
 }
 
+function getCurrentMonth() {
+  const date = new Date()
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`
+}
+
+const MotionSection = motion.section
+
 export function DashboardPage({ onSignOut }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
   const [isBalanceOpen, setIsBalanceOpen] = useState(false)
-  const [isGoalOpen, setIsGoalOpen] = useState(false)
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false)
   const [draftBalance, setDraftBalance] = useState(null)
   const [selectedCategory, setSelectedCategory] = useState('Todas')
-  const [monthlyGoal, setMonthlyGoal] = useState({ target: 1500, current: 930 })
+  const navigate = useNavigate()
 
   const {
     transactions,
@@ -54,11 +62,12 @@ export function DashboardPage({ onSignOut }) {
     error,
     summary,
     addTransaction,
-    addTransactions,
     removeTransaction,
   } = useTransactions()
-  const { profile, isPremium, upgradeToPremium } = useUserPlan()
+  const { profile, isPremium } = useUserPlan()
   const { customBalance, updateCustomBalance } = useCustomBalance()
+  const month = getCurrentMonth()
+  const { budgets } = useMonthlyBudgets(month)
 
   const baseBalance = customBalance != null ? customBalance : summary.balance
   const currentBalanceValue = draftBalance != null ? draftBalance : baseBalance
@@ -79,6 +88,15 @@ export function DashboardPage({ onSignOut }) {
   }, [summary.total, summary.income])
   const health = useMemo(() => getHealthStatus(healthScore), [healthScore])
   const healthProgress = Math.max(0, Math.min(100, healthScore))
+  const monthlyGoal = useMemo(() => {
+    const target = budgets.reduce((sum, budget) => sum + Number(budget.amount), 0)
+    if (target <= 0) return null
+    const [year, monthNumber] = month.split('-')
+    const current = transactions
+      .filter((item) => item.type === 'expense' && item.date?.startsWith(`${year}-${monthNumber}`))
+      .reduce((sum, item) => sum + Number(item.amount), 0)
+    return { target, current }
+  }, [budgets, month, transactions])
 
   const openModal = () => setIsModalOpen(true)
   const closeModal = () => setIsModalOpen(false)
@@ -86,39 +104,22 @@ export function DashboardPage({ onSignOut }) {
   const closeInvoice = () => setIsInvoiceOpen(false)
   const openBalance = () => setIsBalanceOpen(true)
   const closeBalance = () => setIsBalanceOpen(false)
-  const openGoal = () => setIsGoalOpen(true)
-  const closeGoal = () => setIsGoalOpen(false)
   const openPremiumModal = () => setIsPremiumModalOpen(true)
   const closePremiumModal = () => setIsPremiumModalOpen(false)
 
   const handleSaveBalance = async (value) => {
-    try {
-      await updateCustomBalance(value)
-      setDraftBalance(null)
-    } catch (err) {
-      console.error('Erro ao atualizar saldo:', err)
-    }
+    await updateCustomBalance(value)
+    setDraftBalance(null)
   }
   const handleDraftBalance = (value) => setDraftBalance(value)
   const handleCloseBalance = () => {
     setDraftBalance(null)
     closeBalance()
   }
-  const handleSaveGoal = (goal) => setMonthlyGoal(goal)
 
   const handleAddTransaction = async (transaction) => {
     await addTransaction(transaction)
     closeModal()
-  }
-
-  const handleImportTransactions = async (items) => {
-    if (items.length === 0) {
-      closeInvoice()
-      return
-    }
-
-    await addTransactions(items)
-    closeInvoice()
   }
 
   return (
@@ -135,7 +136,7 @@ export function DashboardPage({ onSignOut }) {
             onOpenModal={openModal}
             onEditBalance={openBalance}
             monthlyGoal={monthlyGoal}
-            onEditGoal={openGoal}
+            onEditGoal={() => navigate('/planning')}
           />
         }
         header={
@@ -149,6 +150,102 @@ export function DashboardPage({ onSignOut }) {
         }
       >
         <div className="space-y-5 lg:space-y-6">
+          <MotionSection
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+            className="dashboard-hero auth-noise group relative isolate overflow-hidden rounded-[32px] border border-emerald-300/15 bg-[linear-gradient(115deg,#061a18_0%,#0b1722_55%,#171328_100%)] p-6 text-white shadow-[0_30px_90px_-40px_rgba(16,185,129,0.6)] sm:p-8 lg:p-10"
+          >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full bg-emerald-400/20 blur-[90px] transition-transform duration-1000 group-hover:scale-125"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-40 right-1/3 h-72 w-72 rounded-full bg-blue-500/15 blur-[90px]"
+            />
+
+            <div className="relative grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="space-y-5">
+                <p className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-100">
+                  <Sparkles size={14} className="text-emerald-300" />
+                  Sua visão financeira
+                </p>
+                <div className="space-y-3">
+                  <h1 className="max-w-xl text-3xl font-bold leading-[1.08] text-white sm:text-4xl lg:text-5xl">
+                    Seu dinheiro.
+                    <br />
+                    <span className="bg-[linear-gradient(90deg,#34d399,#2dd4bf,#60a5fa)] bg-clip-text text-transparent">
+                      Em equilíbrio.
+                    </span>
+                  </h1>
+                  <p className="max-w-lg text-sm leading-6 text-slate-300 sm:text-base">
+                    Uma visão clara do que entra, do que sai e de como está seu saldo — tudo em um só painel.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3 pt-1">
+                  <Button
+                    className="h-11 rounded-2xl bg-[linear-gradient(135deg,#10b981,#0d9488)] px-5 text-white shadow-[0_14px_32px_-12px_rgba(16,185,129,0.8)] hover:brightness-110"
+                    onClick={openModal}
+                  >
+                    <Wallet2 size={16} />
+                    Registrar transação
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="h-11 rounded-2xl border border-white/15 bg-white/[0.06] px-5 text-white hover:bg-white/[0.12]"
+                    onClick={openInvoice}
+                  >
+                    Importar fatura
+                  </Button>
+                </div>
+              </div>
+
+              <motion.div
+                animate={{ y: [0, -7, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                className="relative mx-auto w-full max-w-[390px] rounded-[26px] border border-white/15 bg-white/[0.08] p-5 shadow-[0_24px_70px_-30px_rgba(0,0,0,0.8)] backdrop-blur-2xl sm:p-6"
+              >
+                <div className="card-sheen pointer-events-none absolute inset-0 rounded-[26px] opacity-40" />
+                <div className="relative">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-slate-300">
+                      Saldo disponível
+                    </p>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 text-emerald-200">
+                      <Wallet2 size={17} />
+                    </span>
+                  </div>
+                  <p className="mt-3 truncate font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                    {displayBalance}
+                  </p>
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/25 p-3">
+                      <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400">Receitas</p>
+                      <p className="mt-1 truncate text-sm font-semibold text-emerald-200">
+                        {summary.formattedIncome}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/25 p-3">
+                      <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400">Despesas</p>
+                      <p className="mt-1 truncate text-sm font-semibold text-rose-200">
+                        {summary.formattedExpense}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-4 text-xs text-slate-300">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]" />
+                      Saúde financeira
+                    </span>
+                    <span className="font-semibold text-white">{health}</span>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </MotionSection>
+
           <MetricsGrid summary={summary} displayBalance={displayBalance} />
 
           <PremiumUpgradeCard
@@ -274,7 +371,7 @@ export function DashboardPage({ onSignOut }) {
       <Modal
         open={isModalOpen}
         title="Nova transação"
-        description="Registre receitas e despesas com categoria, valor e data. Os dados ficam salvos localmente no navegador."
+        description="Registre receitas e despesas com categoria, valor e data. Os dados ficam salvos na sua conta."
         onClose={closeModal}
       >
         <AddTransactionForm
@@ -286,28 +383,21 @@ export function DashboardPage({ onSignOut }) {
       <UploadInvoiceModal
         open={isInvoiceOpen}
         onClose={closeInvoice}
-        onImport={handleImportTransactions}
       />
 
-      <EditBalanceModal
-        open={isBalanceOpen}
-        currentBalance={currentBalanceValue}
-        onSave={handleSaveBalance}
-        onChange={handleDraftBalance}
-        onClose={handleCloseBalance}
-      />
-
-      <EditGoalModal
-        open={isGoalOpen}
-        currentGoal={monthlyGoal}
-        onSave={handleSaveGoal}
-        onClose={closeGoal}
-      />
+      {isBalanceOpen ? (
+        <EditBalanceModal
+          open={isBalanceOpen}
+          currentBalance={currentBalanceValue}
+          onSave={handleSaveBalance}
+          onChange={handleDraftBalance}
+          onClose={handleCloseBalance}
+        />
+      ) : null}
 
       <PremiumCheckoutModal
         open={isPremiumModalOpen}
         onClose={closePremiumModal}
-        onUpgrade={upgradeToPremium}
         isPremium={isPremium}
         expiresAt={profile.subscription_expires_at ? new Date(profile.subscription_expires_at).toLocaleDateString('pt-BR') : null}
       />

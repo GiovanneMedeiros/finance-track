@@ -1,29 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { supabase } from '@/services/supabaseClient'
 
 export function useCustomBalance() {
   const [customBalance, setCustomBalance] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const fetchCustomBalance = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-
+  const loadCustomBalance = useCallback(async () => {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-    if (sessionError) {
-      setError(sessionError.message)
-      setLoading(false)
-      return
-    }
+    if (sessionError) throw sessionError
 
     const userId = sessionData?.session?.user?.id
-    if (!userId) {
-      setCustomBalance(null)
-      setLoading(false)
-      return
-    }
+    if (!userId) return null
 
     const { data, error: fetchError } = await supabase
       .from('profiles')
@@ -31,57 +20,72 @@ export function useCustomBalance() {
       .eq('id', userId)
       .maybeSingle()
 
-    if (fetchError) {
-      console.error('Erro ao buscar custom_balance:', fetchError)
-      setError(fetchError.message)
-      setLoading(false)
-      return
-    }
+    if (fetchError) throw fetchError
 
-    const balanceValue = data?.custom_balance ?? null
-    console.log('Saldo carregado do Supabase:', balanceValue)
-    setCustomBalance(balanceValue)
-    setLoading(false)
+    return data?.custom_balance ?? null
   }, [])
 
+  const fetchCustomBalance = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const balance = await loadCustomBalance()
+      setCustomBalance(balance)
+      return balance
+    } catch (fetchError) {
+      setError(fetchError.message)
+      throw fetchError
+    } finally {
+      setLoading(false)
+    }
+  }, [loadCustomBalance])
+
   useEffect(() => {
-    fetchCustomBalance()
-  }, [fetchCustomBalance])
+    let active = true
+    loadCustomBalance().then(
+      (balance) => {
+        if (active) {
+          setCustomBalance(balance)
+          setError(null)
+        }
+      },
+      (fetchError) => {
+        if (active) setError(fetchError.message)
+      },
+    ).finally(() => {
+      if (active) setLoading(false)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [loadCustomBalance])
 
   const updateCustomBalance = useCallback(async (newBalance) => {
     setLoading(true)
     setError(null)
 
-    const { data: sessionData } = await supabase.auth.getSession()
-    const userId = sessionData?.session?.user?.id
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      const userId = sessionData?.session?.user?.id
+      if (!userId) throw new Error('Usuário não autenticado')
 
-    if (!userId) {
-      const err = new Error('Usuário não autenticado')
-      setError(err.message)
-      setLoading(false)
-      throw err
-    }
+      const numBalance = Number(newBalance)
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ custom_balance: numBalance })
+        .eq('id', userId)
+      if (updateError) throw updateError
 
-    const numBalance = Number(newBalance)
-    console.log('Salvando saldo:', numBalance)
-
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ custom_balance: numBalance })
-      .eq('id', userId)
-
-    if (updateError) {
-      console.error('Erro ao atualizar custom_balance:', updateError)
-      setError(updateError.message)
-      setLoading(false)
+      setCustomBalance(numBalance)
+      await fetchCustomBalance()
+    } catch (updateError) {
+      setError(updateError.message || 'Não foi possível atualizar o saldo.')
       throw updateError
+    } finally {
+      setLoading(false)
     }
-
-    console.log('Saldo salvo com sucesso, refetchando...')
-    setCustomBalance(numBalance)
-    
-    // Refetch para garantir que está sincronizado
-    await fetchCustomBalance()
   }, [fetchCustomBalance])
 
   return {

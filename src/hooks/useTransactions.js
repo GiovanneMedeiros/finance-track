@@ -18,10 +18,9 @@ export function useTransactions() {
   const [error, setError] = useState(null)
 
   const fetchTransactions = useCallback(async () => {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     setLoading(true)
     setError(null)
-
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     if (sessionError) {
       setError(sessionError.message)
       setLoading(false)
@@ -53,114 +52,118 @@ export function useTransactions() {
     setLoading(true)
     setError(null)
 
-    const { data: sessionData } = await supabase.auth.getSession()
-    const userId = sessionData?.session?.user?.id
-    if (!userId) {
-      setError('Usuário não autenticado')
-      setLoading(false)
-      return
-    }
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      const userId = sessionData?.session?.user?.id
+      if (!userId) throw new Error('Usuário não autenticado.')
 
-    const createdAt = transaction.created_at
-      ? transaction.created_at
-      : transaction.date
-      ? new Date(transaction.date).toISOString()
-      : new Date().toISOString()
+      const createdAt = transaction.created_at
+        ? transaction.created_at
+        : transaction.date
+          ? new Date(transaction.date).toISOString()
+          : new Date().toISOString()
 
-    const { data, error: createError } = await transactionService.create({
-      ...transaction,
-      user_id: userId,
-      created_at: createdAt,
-    })
-
-    if (createError) {
-      setError(createError.message)
-    } else {
+      const { data, error: createError } = await transactionService.create({
+        ...transaction,
+        user_id: userId,
+        created_at: createdAt,
+      })
+      if (createError) throw createError
+      if (!data) throw new Error('O banco não retornou a transação salva.')
       setTransactions((current) => [mapTransaction(data), ...current])
+      return data
+    } catch (mutationError) {
+      setError(mutationError.message || 'Não foi possível salvar a transação.')
+      throw mutationError
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [])
 
   const addTransactions = useCallback(async (items) => {
     setLoading(true)
     setError(null)
 
-    const { data: sessionData } = await supabase.auth.getSession()
-    const userId = sessionData?.session?.user?.id
-    if (!userId) {
-      setError('Usuário não autenticado')
-      setLoading(false)
-      return
-    }
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      const userId = sessionData?.session?.user?.id
+      if (!userId) throw new Error('Usuário não autenticado.')
 
-    const preparedItems = items.map((item) => {
-      const createdAt = item.created_at
-        ? item.created_at
-        : item.date
-        ? new Date(item.date).toISOString()
-        : new Date().toISOString()
+      const preparedItems = items.map((item) => {
+        const createdAt = item.created_at
+          ? item.created_at
+          : item.date
+            ? new Date(item.date).toISOString()
+            : new Date().toISOString()
 
-      return {
-        ...item,
-        user_id: userId,
-        amount: Number(item.amount),
-        type: item.type || 'expense',
-        category: item.category || 'Outros',
-        description: item.description || item.originalDescription || '',
-        created_at: createdAt,
-        updated_at: item.updated_at || createdAt,
-      }
-    })
+        return {
+          ...item,
+          user_id: userId,
+          amount: Number(item.amount),
+          type: item.type || 'expense',
+          category: item.category || 'Outros',
+          description: item.description || item.originalDescription || '',
+          created_at: createdAt,
+          updated_at: item.updated_at || createdAt,
+        }
+      })
 
-    const { data, error: createError } = await transactionService.createMany(preparedItems)
-
-    if (createError) {
-      setError(createError.message)
-    } else if (Array.isArray(data) && data.length > 0) {
+      const { data, error: createError } = await transactionService.createMany(preparedItems)
+      if (createError) throw createError
+      if (Array.isArray(data) && data.length > 0) {
       setTransactions((current) => [
         ...data.map(mapTransaction),
         ...current,
       ])
-    } else {
-      await fetchTransactions()
+      } else {
+        await fetchTransactions()
+      }
+      return data
+    } catch (mutationError) {
+      setError(mutationError.message || 'Não foi possível importar as transações.')
+      throw mutationError
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }, [fetchTransactions])
 
   const updateTransaction = useCallback(async (id, updates) => {
     setLoading(true)
     setError(null)
 
-    const { data, error: updateError } = await transactionService.update(id, {
-      ...updates,
-      updated_at: new Date().toISOString(),
-    })
-
-    if (updateError) {
-      setError(updateError.message)
+    try {
+      const { data, error: updateError } = await transactionService.update(id, {
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      if (updateError) throw updateError
+      if (!data) throw new Error('A transação não foi encontrada ou não pôde ser atualizada.')
+      setTransactions((current) => current.map((item) => (item.id === id ? mapTransaction(data) : item)))
+      return data
+    } catch (mutationError) {
+      setError(mutationError.message || 'Não foi possível atualizar a transação.')
+      throw mutationError
+    } finally {
       setLoading(false)
-      return
     }
-
-    setTransactions((current) => current.map((item) => (item.id === id ? mapTransaction(data) : item)))
-    setLoading(false)
-    return data
   }, [])
 
   const removeTransaction = useCallback(async (id) => {
     setLoading(true)
     setError(null)
 
-    const { error: removeError } = await transactionService.remove(id)
-    if (removeError) {
-      setError(removeError.message)
+    try {
+      const { error: removeError } = await transactionService.remove(id)
+      if (removeError) throw removeError
+      setTransactions((current) => current.filter((transaction) => transaction.id !== id))
+    } catch (mutationError) {
+      setError(mutationError.message || 'Não foi possível excluir a transação.')
+      throw mutationError
+    } finally {
       setLoading(false)
-      return
     }
-
-    setTransactions((current) => current.filter((transaction) => transaction.id !== id))
-    setLoading(false)
   }, [])
 
   const summary = useMemo(() => {

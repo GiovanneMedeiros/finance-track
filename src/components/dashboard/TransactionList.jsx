@@ -74,7 +74,7 @@ export function TransactionList({ transactions, onRemove, onEdit }) {
                   size="icon"
                   variant="ghost"
                   className="text-[var(--text-secondary)] hover:text-rose-200"
-                  onClick={() => onRemove(transaction.id)}
+                  onClick={() => void onRemove(transaction.id).catch(() => {})}
                 >
                   <Trash2 size={16} />
                 </Button>

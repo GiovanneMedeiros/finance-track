@@ -15,25 +15,12 @@ export function useUserPlan() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const fetchProfile = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-
+  const loadProfile = useCallback(async () => {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-    if (sessionError) {
-      setError(sessionError.message)
-      setProfile(DEFAULT_PROFILE)
-      setLoading(false)
-      return
-    }
+    if (sessionError) throw sessionError
 
     const currentUser = sessionData?.session?.user
-    setUser(currentUser)
-    if (!currentUser) {
-      setProfile(DEFAULT_PROFILE)
-      setLoading(false)
-      return
-    }
+    if (!currentUser) return { user: null, profile: DEFAULT_PROFILE, error: null }
 
     const { data, error: profileError } = await supabase
       .from('profiles')
@@ -41,110 +28,99 @@ export function useUserPlan() {
       .eq('id', currentUser.id)
       .maybeSingle()
 
-    if (profileError) {
-      setError(profileError.message)
-      setProfile(DEFAULT_PROFILE)
-      setLoading(false)
-      return
+    if (profileError) throw profileError
+
+    if (data) return { user: currentUser, profile: data, error: null }
+
+    return {
+      user: currentUser,
+      profile: DEFAULT_PROFILE,
+      error: 'Perfil não encontrado. Saia da conta e entre novamente; se o problema persistir, verifique a migration de perfis.',
     }
-
-    if (!data) {
-      const { error: insertError } = await supabase.from('profiles').insert({
-        id: user.id,
-        email: user.email,
-        plan: 'free',
-        subscription_status: 'inactive',
-        subscription_expires_at: null,
-      })
-
-      if (insertError) {
-        setError(insertError.message)
-        setProfile(DEFAULT_PROFILE)
-        setLoading(false)
-        return
-      }
-
-      setProfile({
-        id: user.id,
-        email: user.email,
-        ...DEFAULT_PROFILE,
-      })
-      setLoading(false)
-      return
-    }
-
-    setProfile(data)
-    setLoading(false)
   }, [])
 
+  const fetchProfile = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await loadProfile()
+      setUser(result.user)
+      setProfile(result.profile)
+      setError(result.error)
+    } catch (profileError) {
+      setUser(null)
+      setProfile(DEFAULT_PROFILE)
+      setError(profileError.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [loadProfile])
+
   useEffect(() => {
-    fetchProfile()
+    let active = true
+    loadProfile().then(
+      (result) => {
+        if (active) {
+          setUser(result.user)
+          setProfile(result.profile)
+          setError(result.error)
+        }
+      },
+      (profileError) => {
+        if (active) {
+          setUser(null)
+          setProfile(DEFAULT_PROFILE)
+          setError(profileError.message)
+        }
+      },
+    ).finally(() => {
+      if (active) setLoading(false)
+    })
+
     const { data: authListener } = supabase.auth.onAuthStateChange(() => {
       fetchProfile()
     })
 
-    return () => authListener.subscription.unsubscribe()
-  }, [fetchProfile])
+    return () => {
+      active = false
+      authListener.subscription.unsubscribe()
+    }
+  }, [fetchProfile, loadProfile])
 
   const setUserProfile = useCallback(
     async (partialProfile) => {
       const { data: sessionData } = await supabase.auth.getSession()
-      const user = sessionData?.session?.user
+      const currentUser = sessionData?.session?.user
 
-      if (!user) {
-        setError('Usuário não autenticado')
-        return
+      if (!currentUser) {
+        const authError = new Error('Usuário não autenticado')
+        setError(authError.message)
+        throw authError
+      }
+
+      const safeProfile = {}
+      if (typeof partialProfile.full_name === 'string') {
+        safeProfile.full_name = partialProfile.full_name.trim()
       }
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .update(partialProfile)
-        .eq('id', user.id)
+        .update(safeProfile)
+        .eq('id', currentUser.id)
 
       if (updateError) {
         setError(updateError.message)
-        return
+        throw updateError
       }
 
       setProfile((currentProfile) => ({
         ...currentProfile,
         ...partialProfile,
       }))
+      return { data: safeProfile }
     },
     [],
   )
-
-  const upgradeToPremium = useCallback(async () => {
-    const { data: sessionData } = await supabase.auth.getSession()
-    const currentUser = sessionData?.session?.user
-
-    if (!currentUser) {
-      setError('Usuário não autenticado')
-      return
-    }
-
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    const update = {
-      plan: 'premium',
-      subscription_status: 'active',
-      subscription_expires_at: expiresAt,
-    }
-
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update(update)
-      .eq('id', currentUser.id)
-
-    if (updateError) {
-      setError(updateError.message)
-      return
-    }
-
-    setProfile((currentProfile) => ({
-      ...currentProfile,
-      ...update,
-    }))
-  }, [])
 
   return {
     user,
@@ -152,7 +128,6 @@ export function useUserPlan() {
     isPremium: isPremiumUser(profile),
     loading,
     error,
-    upgradeToPremium,
     setUserProfile,
     refreshProfile: fetchProfile,
   }

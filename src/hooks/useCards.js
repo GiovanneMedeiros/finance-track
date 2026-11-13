@@ -9,10 +9,9 @@ export function useCards() {
   const [error, setError] = useState(null)
 
   const fetchCards = useCallback(async () => {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     setLoading(true)
     setError(null)
-
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     if (sessionError) {
       setError(sessionError.message)
       setLoading(false)
@@ -44,57 +43,59 @@ export function useCards() {
     setLoading(true)
     setError(null)
 
-    const { data: sessionData } = await supabase.auth.getSession()
-    const userId = sessionData?.session?.user?.id
-    if (!userId) {
-      setError('Usuário não autenticado')
-      setLoading(false)
-      return
-    }
-
-    const { data, error: createError } = await cardService.create({
-      ...cardData,
-      user_id: userId,
-    })
-
-    if (createError) {
-      setError(createError.message)
-    } else {
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      const userId = sessionData?.session?.user?.id
+      if (!userId) throw new Error('Usuário não autenticado.')
+      const { data, error: createError } = await cardService.create({
+        ...cardData,
+        user_id: userId,
+      })
+      if (createError) throw createError
+      if (!data) throw new Error('O banco não retornou o cartão salvo.')
       setCards((current) => [data, ...current])
+      return data
+    } catch (mutationError) {
+      setError(mutationError.message || 'Não foi possível salvar o cartão.')
+      throw mutationError
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [])
 
   const updateCard = useCallback(async (id, updates) => {
     setLoading(true)
     setError(null)
 
-    const { data, error: updateError } = await cardService.update(id, updates)
-
-    if (updateError) {
-      setError(updateError.message)
+    try {
+      const { data, error: updateError } = await cardService.update(id, updates)
+      if (updateError) throw updateError
+      if (!data) throw new Error('O cartão não foi encontrado ou não pôde ser atualizado.')
+      setCards((current) => current.map((item) => (item.id === id ? data : item)))
+      return data
+    } catch (mutationError) {
+      setError(mutationError.message || 'Não foi possível atualizar o cartão.')
+      throw mutationError
+    } finally {
       setLoading(false)
-      return
     }
-
-    setCards((current) => current.map((item) => (item.id === id ? data : item)))
-    setLoading(false)
-    return data
   }, [])
 
   const removeCard = useCallback(async (id) => {
     setLoading(true)
     setError(null)
 
-    const { error: removeError } = await cardService.remove(id)
-    if (removeError) {
-      setError(removeError.message)
+    try {
+      const { error: removeError } = await cardService.remove(id)
+      if (removeError) throw removeError
+      setCards((current) => current.filter((card) => card.id !== id))
+    } catch (mutationError) {
+      setError(mutationError.message || 'Não foi possível excluir o cartão.')
+      throw mutationError
+    } finally {
       setLoading(false)
-      return
     }
-
-    setCards((current) => current.filter((card) => card.id !== id))
-    setLoading(false)
   }, [])
 
   return {

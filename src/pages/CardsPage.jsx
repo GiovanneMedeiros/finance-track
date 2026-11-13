@@ -17,8 +17,8 @@ import { useCards } from '@/hooks/useCards'
 import { useUserPlan } from '@/hooks/useUserPlan'
 
 export function CardsPage({ onSignOut }) {
-  const { profile, isPremium, upgradeToPremium } = useUserPlan()
-  const { cards, addCard, updateCard, removeCard, loading } = useCards()
+  const { profile, isPremium } = useUserPlan()
+  const { cards, addCard, updateCard, removeCard, loading, error } = useCards()
   const [showPremium, setShowPremium] = useState(false)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [selectedCard, setSelectedCard] = useState(null)
@@ -43,7 +43,11 @@ export function CardsPage({ onSignOut }) {
 
   const handleDeleteCard = async (cardId) => {
     if (window.confirm('Tem certeza que deseja deletar este cartão?')) {
-      await removeCard(cardId)
+      try {
+        await removeCard(cardId)
+      } catch {
+        // The hook exposes the failure in the page-level error state.
+      }
     }
   }
 
@@ -57,24 +61,19 @@ export function CardsPage({ onSignOut }) {
           plan={profile?.plan}
           isPremium={isPremium}
           onOpenPremium={() => setShowPremium(true)}
-          onOpenModal={() => null}
-          onEditBalance={() => null}
           monthlyGoal={null}
-          onEditGoal={() => null}
         />
       }
       header={
         <Header
           currentDateLabel={formatLongDate(new Date())}
           transactionCount={0}
-          onOpenModal={() => null}
-          onOpenInvoice={() => null}
           onSignOut={onSignOut}
         />
       }
     >
-      {/* TODO: Re-enable PremiumGate wrapper after testing */}
       <div className="space-y-6">
+        {error ? <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 text-sm text-rose-700 dark:text-rose-200">{error}</div> : null}
         <SectionHeader
           title="Cartões"
           description="Acompanhe seus cartões de crédito, limites e faturas em um único lugar."
@@ -128,20 +127,18 @@ export function CardsPage({ onSignOut }) {
         </div>
       </div>
 
-      <CardFormModal
-        open={isFormOpen}
-        card={selectedCard}
-        onClose={handleCloseForm}
-        onSave={handleSaveCard}
-      />
+      {isFormOpen ? (
+        <CardFormModal
+          open={isFormOpen}
+          card={selectedCard}
+          onClose={handleCloseForm}
+          onSave={handleSaveCard}
+        />
+      ) : null}
 
       <PremiumCheckoutModal
         open={showPremium}
         onClose={() => setShowPremium(false)}
-        onUpgrade={async () => {
-          await upgradeToPremium()
-          setShowPremium(false)
-        }}
       />
     </AppShell>
   )

@@ -23,7 +23,7 @@ export function PremiumUpgradeCard({ isPremium, expiresAt, onUpgrade }) {
 
       <div className="mt-5">
         <Button className="w-full" onClick={onUpgrade}>
-          {isPremium ? 'Renovar Premium' : 'Assinar Premium agora'}
+          {isPremium ? 'Ver detalhes do plano' : 'Assinar Premium agora'}
         </Button>
       </div>
     </div>
