@@ -19,6 +19,7 @@ export const transactionService = {
       type: transaction.type,
       category: transaction.category,
       amount: transaction.amount,
+      date: transaction.date || transaction.created_at?.slice(0, 10),
       created_at: transaction.created_at,
       ...(transaction.updated_at ? { updated_at: transaction.updated_at } : {}),
     }
@@ -38,6 +39,7 @@ export const transactionService = {
       type: transaction.type,
       category: transaction.category,
       amount: transaction.amount,
+      date: transaction.date || transaction.created_at?.slice(0, 10),
       created_at: transaction.created_at,
       ...(transaction.updated_at ? { updated_at: transaction.updated_at } : {}),
     }))
@@ -57,6 +59,7 @@ export const transactionService = {
       type: updates.type,
       category: updates.category,
       amount: updates.amount,
+      date: updates.date,
       updated_at: updates.updated_at,
     }
 

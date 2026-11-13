@@ -15,7 +15,7 @@ export function PremiumGate({ isPremium, title, description, onUpgrade, children
       <h3 className="text-lg font-semibold text-slate-950 dark:text-white">{title || 'Funcionalidade Premium'}</h3>
       <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{description || 'Esta área está disponível apenas para assinantes Premium.'}</p>
       <div className="mt-5">
-        <Button onClick={onUpgrade}>Desbloquear Premium por R$29,90/mês</Button>
+        <Button onClick={onUpgrade} disabled={!onUpgrade}>Assinar Premium por R$29,90/mês</Button>
       </div>
     </div>
   )

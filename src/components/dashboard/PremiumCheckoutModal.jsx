@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Loader2, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -7,18 +7,12 @@ import { formatCurrency } from '@/utils/formatters'
 
 const PREMIUM_PRICE = 29.9
 
-export function PremiumCheckoutModal({ open, onClose, onUpgrade, isPremium, expiresAt }) {
-  const [isLoading, setIsLoading] = useState(false)
+export function PremiumCheckoutModal({ open, onClose, isPremium, expiresAt }) {
+  const [checkoutNotice, setCheckoutNotice] = useState(false)
 
-  const handleUpgrade = async () => {
-    setIsLoading(true)
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 700))
-      onUpgrade()
-      onClose()
-    } finally {
-      setIsLoading(false)
-    }
+  const handleClose = () => {
+    setCheckoutNotice(false)
+    onClose()
   }
 
   return (
@@ -30,7 +24,7 @@ export function PremiumCheckoutModal({ open, onClose, onUpgrade, isPremium, expi
           ? `Sua assinatura Premium está ativa até ${expiresAt}. Você pode renovar a qualquer momento.`
           : 'Desbloqueie todos os recursos Premium por R$29,90/mês.'
       }
-      onClose={onClose}
+      onClose={handleClose}
       size="lg"
     >
       <div className="space-y-6">
@@ -58,20 +52,19 @@ export function PremiumCheckoutModal({ open, onClose, onUpgrade, isPremium, expi
           )}
         </div>
 
-        {!isPremium && (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-600 dark:text-slate-300">Pagamentos via Mercado Pago no checkout.</p>
-            <Button onClick={handleUpgrade} disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" /> Processando...
-                </>
-              ) : (
-                'Assinar agora'
-              )}
-            </Button>
+        {!isPremium ? (
+          <div className="space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-600 dark:text-slate-300">Checkout e pagamentos serão configurados depois.</p>
+              <Button onClick={() => setCheckoutNotice(true)}>Assinar agora</Button>
+            </div>
+            {checkoutNotice ? (
+              <p role="status" className="text-sm text-amber-700 dark:text-amber-300">
+                O checkout ainda não está configurado. Nenhuma cobrança foi feita e seu plano não foi alterado.
+              </p>
+            ) : null}
           </div>
-        )}
+        ) : null}
       </div>
     </Modal>
   )

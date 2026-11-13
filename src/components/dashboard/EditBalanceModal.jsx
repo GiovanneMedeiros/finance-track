@@ -18,8 +18,8 @@ const STEPS = { FORM: 'form', SAVING: 'saving', SUCCESS: 'success' }
 const MAX_CENTS = 99_999_999 // R$ 999.999,99
 
 export function EditBalanceModal({ open, currentBalance, onSave, onClose, onChange }) {
-  const [rawCents, setRawCents] = useState(0)
-  const [isNegative, setIsNegative] = useState(false)
+  const [rawCents, setRawCents] = useState(() => Math.round(Math.abs(currentBalance ?? 0) * 100))
+  const [isNegative, setIsNegative] = useState(() => (currentBalance ?? 0) < 0)
   const [step, setStep] = useState(STEPS.FORM)
   const [error, setError] = useState(null)
   const inputRef = useRef(null)
@@ -31,18 +31,11 @@ export function EditBalanceModal({ open, currentBalance, onSave, onClose, onChan
 
   useEffect(() => {
     if (open) {
-      if (currentBalance != null && currentBalance !== 0) {
-        const cents = Math.round(Math.abs(currentBalance) * 100)
-        setRawCents(cents)
-        setIsNegative(currentBalance < 0)
-      } else {
-        setRawCents(0)
-        setIsNegative(false)
-      }
-      resetForm()
-      setTimeout(() => inputRef.current?.focus(), 80)
+      const timer = setTimeout(() => inputRef.current?.focus(), 80)
+      return () => clearTimeout(timer)
     }
-  }, [open, currentBalance, resetForm])
+    return undefined
+  }, [open])
 
   const signedCents = isNegative ? -rawCents : rawCents
   const displayValue = centsToDisplay(signedCents)
@@ -143,7 +136,7 @@ export function EditBalanceModal({ open, currentBalance, onSave, onClose, onChan
     <Modal
       open={open}
       title="Atualizar saldo"
-      description="Informe o saldo disponível atualizado. O valor será salvo localmente."
+      description="Informe o saldo disponível atualizado para sua conta."
       onClose={handleClose}
     >
       <form onSubmit={handleSubmit} className="space-y-5">

@@ -32,6 +32,7 @@ export function CategoriesPage({ onSignOut }) {
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false)
   const [formValues, setFormValues] = useState(defaultFormValues)
   const [editingCategory, setEditingCategory] = useState(null)
+  const [formError, setFormError] = useState('')
 
   const { categories, loading, error, addCategory, updateCategory, removeCategory } = useCategories()
   const { profile, isPremium } = useUserPlan()
@@ -54,11 +55,13 @@ export function CategoriesPage({ onSignOut }) {
   const openNewCategory = () => {
     setEditingCategory(null)
     setFormValues(defaultFormValues)
+    setFormError('')
     setIsModalOpen(true)
   }
 
   const openEditCategory = (category) => {
     setEditingCategory(category)
+    setFormError('')
     setFormValues({
       name: category.name,
       type: category.type,
@@ -72,17 +75,23 @@ export function CategoriesPage({ onSignOut }) {
     setIsModalOpen(false)
     setEditingCategory(null)
     setFormValues(defaultFormValues)
+    setFormError('')
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
 
-    if (editingCategory) {
-      await updateCategory(editingCategory.id, formValues)
-    } else {
-      await addCategory(formValues)
+    setFormError('')
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, formValues)
+      } else {
+        await addCategory(formValues)
+      }
+      closeModal()
+    } catch (submitError) {
+      setFormError(submitError.message || 'Não foi possível salvar a categoria.')
     }
-    closeModal()
   }
 
   const columns = [
@@ -106,7 +115,11 @@ export function CategoriesPage({ onSignOut }) {
           <Button variant="secondary" size="icon" onClick={() => openEditCategory(item)}>
             <Eye size={16} />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => removeCategory(item.id)}>
+          <Button variant="ghost" size="icon" onClick={() => {
+            if (window.confirm(`Excluir a categoria "${item.name}"?`)) {
+              void removeCategory(item.id).catch(() => {})
+            }
+          }}>
             ✕
           </Button>
         </div>
@@ -124,18 +137,13 @@ export function CategoriesPage({ onSignOut }) {
           plan={profile?.plan}
           isPremium={isPremium}
           onOpenPremium={() => setIsPremiumModalOpen(true)}
-          onOpenModal={() => null}
-          onEditBalance={() => null}
           monthlyGoal={null}
-          onEditGoal={() => null}
         />
       }
       header={
         <Header
           currentDateLabel={formatLongDate(new Date())}
           transactionCount={categories.length}
-          onOpenModal={openNewCategory}
-          onOpenInvoice={() => null}
           onSignOut={onSignOut}
         />
       }
@@ -209,6 +217,7 @@ export function CategoriesPage({ onSignOut }) {
         onClose={closeModal}
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
+          {formError ? <p role="alert" className="text-sm text-rose-600">{formError}</p> : null}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Nome</label>
             <input

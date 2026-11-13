@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { CATEGORIES } from '@/constants/categories'
 import { Button } from '@/components/ui/Button'
@@ -29,26 +29,14 @@ export function AddTransactionForm({ onSubmit, onCancel, initialValues }) {
     amount: initialValues?.amount != null ? String(initialValues.amount) : '',
   }))
   const [errors, setErrors] = useState({})
+  const [submitError, setSubmitError] = useState('')
 
   const updateField = (field, value) => {
     setValues((current) => ({ ...current, [field]: value }))
     setErrors((current) => ({ ...current, [field]: '' }))
   }
 
-  useEffect(() => {
-    if (!initialValues) {
-      setValues(getInitialValues())
-      return
-    }
-
-    setValues({
-      ...getInitialValues(),
-      ...initialValues,
-      amount: initialValues.amount != null ? String(initialValues.amount) : '',
-    })
-  }, [initialValues])
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
 
     const nextErrors = {}
@@ -70,18 +58,23 @@ export function AddTransactionForm({ onSubmit, onCancel, initialValues }) {
       return
     }
 
-    onSubmit({
-      ...values,
-      title: values.title.trim(),
-      amount: Number(values.amount),
-    })
-
-    setValues(getInitialValues())
-    setErrors({})
+    setSubmitError('')
+    try {
+      await onSubmit({
+        ...values,
+        title: values.title.trim(),
+        amount: Number(values.amount),
+      })
+      setValues(getInitialValues())
+      setErrors({})
+    } catch (submitFailure) {
+      setSubmitError(submitFailure.message || 'Não foi possível salvar a transação.')
+    }
   }
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
+      {submitError ? <p role="alert" className="text-sm text-rose-600">{submitError}</p> : null}
       <Input
         label="Descricao"
         placeholder="Ex.: Salario, Aluguel, Uber"
