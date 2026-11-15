@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Check, Pencil, Plus, Trash2 } from 'lucide-react'
 
 import { AppShell } from '@/app/AppShell'
+import { CardBillList } from '@/components/cards/CardBillList'
 import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Button } from '@/components/ui/Button'
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { useCards } from '@/hooks/useCards'
+import { useCardPortfolio } from '@/hooks/useCardPortfolio'
 import { useInvoices } from '@/hooks/useInvoices'
 import { useUserPlan } from '@/hooks/useUserPlan'
 import { formatCurrency, formatLongDate } from '@/utils/formatters'
@@ -30,12 +32,26 @@ export function InvoicesPage({ onSignOut }) {
   const { profile, isPremium } = useUserPlan()
   const { cards, loading: cardsLoading, error: cardsError } = useCards()
   const { invoices, loading, error, saveInvoice, removeInvoice } = useInvoices()
+  const portfolio = useCardPortfolio()
+  const { bills: cardBills, purchases: cardPurchases, installments: cardInstallments, payBill } = portfolio
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState(null)
   const [form, setForm] = useState(defaultInvoice)
   const [formError, setFormError] = useState('')
   const [actionError, setActionError] = useState('')
   const [saving, setSaving] = useState(false)
+
+  const cardBillOpenTotal = useMemo(
+    () => cardBills
+      .filter((bill) => bill.status !== 'paid')
+      .reduce((sum, bill) => (
+        sum + Number(bill.opening_balance ?? 0)
+          + cardInstallments
+            .filter((installment) => installment.bill_id === bill.id)
+            .reduce((billSum, installment) => billSum + Number(installment.amount), 0)
+      ), 0),
+    [cardBills, cardInstallments],
+  )
 
   const openNew = () => {
     setEditingInvoice(null)
@@ -92,22 +108,53 @@ export function InvoicesPage({ onSignOut }) {
     }
   }
 
+  const handlePayCardBill = async (bill) => {
+    if (!window.confirm('Registrar o pagamento desta fatura? O pagamento não será lançado como nova despesa.')) return
+    setActionError('')
+    try {
+      await payBill(bill.id)
+    } catch (paymentError) {
+      setActionError(paymentError.message || 'Não foi possível registrar o pagamento.')
+    }
+  }
+
   const openTotal = useMemo(
-    () => invoices.filter((invoice) => invoice.status === 'open').reduce((sum, invoice) => sum + Number(invoice.amount), 0),
-    [invoices],
+    () => cardBillOpenTotal + invoices.filter((invoice) => invoice.status === 'open').reduce((sum, invoice) => sum + Number(invoice.amount), 0),
+    [cardBillOpenTotal, invoices],
   )
 
   return (
     <AppShell
       sidebar={<Sidebar balanceLabel={formatCurrency(0)} formattedIncome={formatCurrency(0)} formattedExpense={formatCurrency(openTotal)} plan={profile?.plan} isPremium={isPremium} monthlyGoal={null} />}
-      header={<Header currentDateLabel={formatLongDate(new Date())} transactionCount={invoices.length} onSignOut={onSignOut} />}
+      header={<Header currentDateLabel={formatLongDate(new Date())} transactionCount={invoices.length + cardBills.length} onSignOut={onSignOut} />}
     >
       <div className="space-y-6">
-        <SectionHeader title="Faturas" description="Registre valores e vencimentos dos cartões e acompanhe pagamentos." right={<Button onClick={openNew} disabled={!cards.length}><Plus size={16} /> Nova fatura</Button>} />
-        <Card className="flex flex-wrap items-center justify-between gap-3 p-5"><div><p className="text-sm text-[var(--text-secondary)]">Total em aberto</p><p className="mt-1 text-2xl font-bold">{formatCurrency(openTotal)}</p></div><p className="text-sm text-[var(--text-secondary)]">{invoices.filter((invoice) => invoice.status === 'open').length} fatura(s) aguardando pagamento</p></Card>
-        {error || cardsError || actionError ? <Card role="alert" className="p-4 text-sm text-rose-600">{actionError || error || cardsError}</Card> : null}
+        <SectionHeader title="Faturas" description="Faturas automáticas das compras e registros manuais antigos." right={<Button onClick={openNew} disabled={!cards.length}><Plus size={16} /> Nova fatura manual</Button>} />
+        <Card className="flex flex-wrap items-center justify-between gap-3 p-5"><div><p className="text-sm text-[var(--text-secondary)]">Total em aberto</p><p className="mt-1 text-2xl font-bold">{formatCurrency(openTotal)}</p></div><p className="text-sm text-[var(--text-secondary)]">{cardBills.filter((bill) => bill.status !== 'paid').length + invoices.filter((invoice) => invoice.status === 'open').length} fatura(s) aguardando pagamento</p></Card>
+        {error || cardsError || actionError || portfolio.error ? <Card role="alert" className="p-4 text-sm text-rose-600">{actionError || error || cardsError || portfolio.error}</Card> : null}
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold">Faturas das compras no cartão</h2>
+            <p className="text-sm text-[var(--text-secondary)]">Criadas conforme o fechamento de cada cartão; parcelas futuras são atribuídas ao ciclo correto.</p>
+          </div>
+          {portfolio.loading ? <Card className="p-5">Carregando faturas...</Card> : (
+            <CardBillList
+              bills={cardBills}
+              installments={cardInstallments}
+              purchases={cardPurchases}
+              cards={cards}
+              onPay={(bill) => void handlePayCardBill(bill)}
+              mutating={portfolio.mutating}
+            />
+          )}
+        </section>
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold">Faturas registradas manualmente</h2>
+            <p className="text-sm text-[var(--text-secondary)]">Registros legados permanecem separados das faturas calculadas pelas compras.</p>
+          </div>
         {loading || cardsLoading ? <Card className="p-5">Carregando faturas...</Card> : invoices.length === 0 ? (
-          <EmptyState title="Nenhuma fatura registrada" description={cards.length ? 'Adicione o valor e a data de vencimento de uma fatura.' : 'Cadastre um cartão antes de registrar uma fatura.'} action={cards.length ? <Button onClick={openNew}><Plus size={16} /> Registrar fatura</Button> : null} />
+          <EmptyState title="Nenhuma fatura manual" description="As compras novas geram faturas automaticamente. Este espaço mantém registros manuais antigos e permite adicionar outros se necessário." action={cards.length ? <Button onClick={openNew}><Plus size={16} /> Registrar fatura manual</Button> : null} />
         ) : (
           <Card className="overflow-x-auto p-0">
             <table className="w-full min-w-[700px] text-left text-sm">
@@ -116,6 +163,7 @@ export function InvoicesPage({ onSignOut }) {
             </table>
           </Card>
         )}
+        </section>
       </div>
 
       <Modal open={isModalOpen} title={editingInvoice ? 'Editar fatura' : 'Registrar fatura'} onClose={() => setIsModalOpen(false)}>

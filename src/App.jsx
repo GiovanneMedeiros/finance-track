@@ -1,21 +1,30 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { translateAuthError } from '@/utils/authErrors'
 import { isSupabaseConfigured } from '@/services/supabaseClient'
-import { AuthPage } from '@/pages/AuthPage'
-import { DashboardPage } from '@/pages/DashboardPage'
-import { TransactionsPage } from '@/pages/TransactionsPage'
-import { CategoriesPage } from '@/pages/CategoriesPage'
-import { CardsPage } from '@/pages/CardsPage'
-import { InvoicesPage } from '@/pages/InvoicesPage'
-import { PlanningPage } from '@/pages/PlanningPage'
-import { GoalsPage } from '@/pages/GoalsPage'
-import { ReportsPage } from '@/pages/ReportsPage'
-import { ImportsPage } from '@/pages/ImportsPage'
-import { SettingsPage } from '@/pages/SettingsPage'
-import { NotFoundPage } from '@/pages/NotFoundPage'
+
+const AuthPage = lazy(() => import('@/pages/AuthPage').then((module) => ({ default: module.AuthPage })))
+const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((module) => ({ default: module.DashboardPage })))
+const TransactionsPage = lazy(() => import('@/pages/TransactionsPage').then((module) => ({ default: module.TransactionsPage })))
+const CategoriesPage = lazy(() => import('@/pages/CategoriesPage').then((module) => ({ default: module.CategoriesPage })))
+const CardsPage = lazy(() => import('@/pages/CardsPage').then((module) => ({ default: module.CardsPage })))
+const InvoicesPage = lazy(() => import('@/pages/InvoicesPage').then((module) => ({ default: module.InvoicesPage })))
+const PlanningPage = lazy(() => import('@/pages/PlanningPage').then((module) => ({ default: module.PlanningPage })))
+const GoalsPage = lazy(() => import('@/pages/GoalsPage').then((module) => ({ default: module.GoalsPage })))
+const ReportsPage = lazy(() => import('@/pages/ReportsPage').then((module) => ({ default: module.ReportsPage })))
+const ImportsPage = lazy(() => import('@/pages/ImportsPage').then((module) => ({ default: module.ImportsPage })))
+const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((module) => ({ default: module.SettingsPage })))
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })))
+
+function PageLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white">
+      Carregando página...
+    </div>
+  )
+}
 
 function App() {
   const { user, loading, signIn, signUp, signOut, resetPassword, error: authError } = useSupabaseAuth()
@@ -65,31 +74,35 @@ function App() {
 
   if (!user) {
     return (
-      <BrowserRouter>
-        <AuthPage
-          onAuthenticate={handleAuthenticate}
-          authError={translateAuthError(authError)}
-          isSubmitting={isSubmitting}
-        />
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Suspense fallback={<PageLoading />}>
+          <AuthPage
+            onAuthenticate={handleAuthenticate}
+            authError={translateAuthError(authError)}
+            isSubmitting={isSubmitting}
+          />
+        </Suspense>
       </BrowserRouter>
     )
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<DashboardPage onSignOut={signOut} />} />
-        <Route path="/transactions" element={<TransactionsPage onSignOut={signOut} />} />
-        <Route path="/cards" element={<CardsPage onSignOut={signOut} />} />
-        <Route path="/invoices" element={<InvoicesPage onSignOut={signOut} />} />
-        <Route path="/planning" element={<PlanningPage onSignOut={signOut} />} />
-        <Route path="/goals" element={<GoalsPage onSignOut={signOut} />} />
-        <Route path="/categories" element={<CategoriesPage onSignOut={signOut} />} />
-        <Route path="/reports" element={<ReportsPage onSignOut={signOut} />} />
-        <Route path="/imports" element={<ImportsPage onSignOut={signOut} />} />
-        <Route path="/settings" element={<SettingsPage onSignOut={signOut} />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Suspense fallback={<PageLoading />}>
+        <Routes>
+          <Route path="/" element={<DashboardPage onSignOut={signOut} />} />
+          <Route path="/transactions" element={<TransactionsPage onSignOut={signOut} />} />
+          <Route path="/cards" element={<CardsPage onSignOut={signOut} />} />
+          <Route path="/invoices" element={<InvoicesPage onSignOut={signOut} />} />
+          <Route path="/planning" element={<PlanningPage onSignOut={signOut} />} />
+          <Route path="/goals" element={<GoalsPage onSignOut={signOut} />} />
+          <Route path="/categories" element={<CategoriesPage onSignOut={signOut} />} />
+          <Route path="/reports" element={<ReportsPage onSignOut={signOut} />} />
+          <Route path="/imports" element={<ImportsPage onSignOut={signOut} />} />
+          <Route path="/settings" element={<SettingsPage onSignOut={signOut} />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

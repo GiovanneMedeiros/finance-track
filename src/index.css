@@ -126,6 +126,30 @@ html.theme-transition *::after {
     box-shadow: inset 0 0 0 1px var(--soft-ring);
   }
 
+  .card-3d-perspective {
+    perspective: 1200px;
+  }
+
+  .card-3d-surface {
+    isolation: isolate;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  .card-holographic {
+    z-index: 0;
+    opacity: 0.55;
+    background:
+      radial-gradient(ellipse at var(--card-light-x, 50%) var(--card-light-y, 40%), rgba(255, 255, 255, 0.38), transparent 34%),
+      linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.12) 48%, transparent 62%);
+    mix-blend-mode: screen;
+    transition: opacity 0.3s ease;
+  }
+
+  .card-3d-surface:hover .card-holographic {
+    opacity: 0.9;
+  }
+
   .metric-glow {
     position: relative;
     overflow: hidden;
@@ -202,6 +226,14 @@ html.theme-transition *::after {
     background-image:
       linear-gradient(to right, rgba(148, 163, 184, 0.09) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(148, 163, 184, 0.09) 1px, transparent 1px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-3d-surface,
+    .card-holographic {
+      will-change: auto;
+      transition: none;
+    }
   }
 
   .auth-noise {

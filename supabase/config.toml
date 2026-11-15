@@ -1,0 +1,8 @@
+[functions.pluggy-webhook]
+verify_jwt = false
+
+[functions.pluggy-register-webhook]
+verify_jwt = false
+
+[functions.pluggy-reconcile]
+verify_jwt = false

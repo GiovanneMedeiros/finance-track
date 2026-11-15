@@ -1,74 +1,126 @@
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { CARD_BRANDS, CARD_THEMES } from '@/constants/cardThemes'
 
-const COLORS = [
-  '#34d399', // emerald
-  '#06b6d4', // cyan
-  '#8b5cf6', // violet
-  '#ec4899', // pink
-  '#f59e0b', // amber
-  '#ef4444', // red
-]
+const EMPTY_CARD = {
+  name: '',
+  nickname: '',
+  bank: '',
+  card_brand: 'visa',
+  network: 'credit',
+  last_digits: '',
+  cardholder_name: '',
+  limit: '',
+  closing_day: '20',
+  due_day: '10',
+  theme_key: 'custom',
+  color: '#0f766e',
+  notes: '',
+  is_favorite: false,
+  alert_thresholds: [50, 70, 90],
+  alert_spending_increase: true,
+  due_alert_days: '5',
+}
+
+function getFormValues(card) {
+  if (!card) return EMPTY_CARD
+  return {
+    ...EMPTY_CARD,
+    ...card,
+    limit: String(card.limit ?? 0),
+    closing_day: String(card.closing_day ?? 20),
+    due_day: String(card.due_day ?? 10),
+    due_alert_days: String(card.due_alert_days ?? 5),
+    alert_thresholds: card.alert_thresholds ?? [50, 70, 90],
+  }
+}
 
 export function CardFormModal({ open, card, onClose, onSave }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    bank: '',
-    network: 'credit',
-    last_digits: '',
-    limit: 0,
-    current_usage: 0,
-    closing_day: 1,
-    due_day: 10,
-    notes: '',
-    color: COLORS[0],
-    ...(card ?? {}),
-  })
+  const [values, setValues] = useState(() => getFormValues(card))
+  const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [formError, setFormError] = useState('')
 
-  const handleChange = useCallback((field, value) => {
-    setFormData((current) => ({ ...current, [field]: value }))
-  }, [])
+  const update = (field, value) => {
+    setValues((current) => ({ ...current, [field]: value }))
+    setError('')
+  }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    const closingDay = Number(formData.closing_day)
-    const paymentDay = Number(formData.due_day)
-    if (!formData.name.trim() || !formData.bank.trim()) {
-      setFormError('Informe o nome do cartão e do banco.')
-      return
-    }
-    if (!/^\d{4}$/.test(formData.last_digits)) {
-      setFormError('Informe exatamente os quatro últimos dígitos do cartão.')
+  const selectTheme = (themeKey) => {
+    const theme = CARD_THEMES[themeKey]
+    setValues((current) => ({
+      ...current,
+      theme_key: themeKey,
+      bank: theme.bank || current.bank,
+      color: theme.color,
+    }))
+    setError('')
+  }
+
+  const toggleThreshold = (threshold) => {
+    setValues((current) => ({
+      ...current,
+      alert_thresholds: current.alert_thresholds.includes(threshold)
+        ? current.alert_thresholds.filter((value) => value !== threshold)
+        : [...current.alert_thresholds, threshold].sort((a, b) => a - b),
+    }))
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    const limit = Number(values.limit)
+    const closingDay = Number(values.closing_day)
+    const dueDay = Number(values.due_day)
+    const dueAlertDays = Number(values.due_alert_days)
+
+    if (!values.name.trim() || !values.bank.trim()) {
+      setError('Informe o nome do cartão e a instituição financeira.')
       return
     }
     if (
-      !Number.isFinite(Number(formData.limit))
-      || Number(formData.limit) < 0
-      || !Number.isFinite(Number(formData.current_usage))
-      || Number(formData.current_usage) < 0
+      !Number.isFinite(limit)
+      || limit < 0
+      || limit > 9999999999.99
       || !Number.isInteger(closingDay)
       || closingDay < 1
       || closingDay > 31
-      || !Number.isInteger(paymentDay)
-      || paymentDay < 1
-      || paymentDay > 31
+      || !Number.isInteger(dueDay)
+      || dueDay < 1
+      || dueDay > 31
+      || !Number.isInteger(dueAlertDays)
+      || dueAlertDays < 1
+      || dueAlertDays > 30
     ) {
-      setFormError('Confira os valores e os dias de fechamento e vencimento.')
+      setError('Confira o limite e os dias de fechamento, vencimento e alerta.')
       return
     }
-    setSaving(true)
-    setFormError('')
+    if (values.last_digits && !/^\d{4}$/.test(values.last_digits)) {
+      setError('Informe quatro dígitos ou deixe o campo vazio.')
+      return
+    }
 
+    setSaving(true)
+    setError('')
     try {
-      await onSave({ ...formData, name: formData.name.trim(), bank: formData.bank.trim() })
+      await onSave({
+        ...values,
+        name: values.name.trim(),
+        bank: values.bank.trim(),
+        nickname: values.nickname.trim(),
+        cardholder_name: values.cardholder_name.trim(),
+        notes: values.notes.trim(),
+        limit,
+        closing_day: closingDay,
+        due_day: dueDay,
+        due_alert_days: dueAlertDays,
+        is_active: true,
+        alert_thresholds: values.alert_thresholds,
+      })
       onClose()
-    } catch (err) {
-      setFormError(err.message || 'Não foi possível salvar o cartão.')
+    } catch (saveError) {
+      setError(saveError.message || 'Não foi possível salvar o cartão.')
     } finally {
       setSaving(false)
     }
@@ -77,147 +129,89 @@ export function CardFormModal({ open, card, onClose, onSave }) {
   return (
     <Modal
       open={open}
-      title={card ? 'Editar cartão' : 'Novo cartão'}
-      description={card ? 'Atualize os dados do seu cartão' : 'Adicione um novo cartão de crédito'}
+      title={card ? 'Editar cartão' : 'Adicionar cartão'}
+      description="Guarde apenas os dados de identificação. Nunca informe o número completo, CVV ou senha do cartão."
+      size="lg"
       onClose={onClose}
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium text-slate-950 dark:text-white">Nome do cartão</label>
-            <Input
-              type="text"
-              placeholder="Caixa Pessoal, Nubank, etc"
-              value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-950 dark:text-white">Banco</label>
-            <Input
-              type="text"
-              placeholder="Caixa, Nubank, Bradesco"
-              value={formData.bank}
-              onChange={(e) => handleChange('bank', e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-950 dark:text-white">Tipo</label>
-            <Input
-              as="select"
-              value={formData.network}
-              options={[
-                { value: 'credit', label: 'Crédito' },
-                { value: 'debit', label: 'Débito' },
-              ]}
-              onChange={(e) => handleChange('network', e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-950 dark:text-white">Últimos 4 dígitos</label>
-            <Input
-              type="text"
-              placeholder="1234"
-              maxLength="4"
-              value={formData.last_digits}
-              onChange={(e) => handleChange('last_digits', e.target.value.replace(/\D/g, ''))}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-slate-950 dark:text-white">Limite (R$)</label>
-              <Input
-                type="number"
-                placeholder="5000"
-                min="0"
-                step="0.01"
-                value={formData.limit}
-                onChange={(e) => handleChange('limit', Number(e.target.value))}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-950 dark:text-white">Uso atual (R$)</label>
-              <Input
-                type="number"
-                placeholder="0"
-                min="0"
-                step="0.01"
-                value={formData.current_usage}
-                onChange={(e) => handleChange('current_usage', Number(e.target.value))}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-slate-950 dark:text-white">Dia de fechamento</label>
-              <Input
-                type="number"
-                min="1"
-                max="31"
-                value={formData.closing_day}
-                onChange={(e) => handleChange('closing_day', Number(e.target.value))}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-slate-950 dark:text-white">Dia de vencimento</label>
-              <Input
-                type="number"
-                min="1"
-                max="31"
-                value={formData.due_day}
-                onChange={(e) => handleChange('due_day', Number(e.target.value))}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-950 dark:text-white">Cor</label>
-            <div className="grid grid-cols-6 gap-2 mt-1.5">
-              {COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => handleChange('color', color)}
-                  className={`h-8 rounded-lg border-2 transition-transform ${
-                    formData.color === color ? 'border-slate-950 scale-110 dark:border-white' : 'border-transparent'
-                  }`}
-                  style={{ backgroundColor: color }}
-                  aria-label={`Selecionar cor ${color}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-slate-950 dark:text-white">Observações</label>
-            <textarea
-              placeholder="Notas adicionais sobre o cartão"
-              value={formData.notes}
-              onChange={(e) => handleChange('notes', e.target.value)}
-              className="w-full rounded-lg border border-slate-900/10 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-400/50 dark:border-white/10 dark:bg-white/[0.06] dark:placeholder:text-slate-500"
-              rows="3"
-            />
-          </div>
+      <form className="max-h-[70vh] space-y-5 overflow-y-auto pr-1" onSubmit={(event) => void handleSubmit(event)}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label="Nome do cartão" value={values.name} onChange={(event) => update('name', event.target.value)} maxLength={80} required />
+          <Input label="Apelido (opcional)" value={values.nickname} onChange={(event) => update('nickname', event.target.value)} maxLength={50} placeholder="Ex.: Pessoal" />
+          <Input label="Banco ou instituição" value={values.bank} onChange={(event) => update('bank', event.target.value)} maxLength={80} required />
+          <Input label="Bandeira" as="select" value={values.card_brand} options={CARD_BRANDS} onChange={(event) => update('card_brand', event.target.value)} />
+          <Input
+            label="Últimos 4 dígitos (opcional)"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={4}
+            value={values.last_digits}
+            onChange={(event) => update('last_digits', event.target.value.replace(/\D/g, '').slice(0, 4))}
+            placeholder="Não informe o número completo"
+          />
+          <Input label="Titular (opcional)" value={values.cardholder_name} onChange={(event) => update('cardholder_name', event.target.value)} maxLength={80} />
+          <Input label="Limite total (R$)" type="number" min="0" max="9999999999.99" step="0.01" value={values.limit} onChange={(event) => update('limit', event.target.value)} required />
+          <Input label="Tipo" as="select" value={values.network} options={[{ value: 'credit', label: 'Crédito' }, { value: 'debit', label: 'Débito' }]} onChange={(event) => update('network', event.target.value)} />
+          <Input label="Dia de fechamento da fatura" type="number" min="1" max="31" value={values.closing_day} onChange={(event) => update('closing_day', event.target.value)} required />
+          <Input label="Dia de vencimento" type="number" min="1" max="31" value={values.due_day} onChange={(event) => update('due_day', event.target.value)} required />
         </div>
 
-        {formError ? <p role="alert" className="text-sm text-rose-600">{formError}</p> : null}
-        <div className="flex gap-3">
-          <Button variant="ghost" type="button" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={saving} className="flex-1">
-            {saving ? 'Salvando...' : card ? 'Atualizar' : 'Adicionar'}
-          </Button>
+        <fieldset>
+          <legend className="mb-2 text-sm font-medium">Tema visual</legend>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(CARD_THEMES).map(([key, theme]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => selectTheme(key)}
+                aria-pressed={values.theme_key === key}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${values.theme_key === key ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200' : 'border-slate-900/10 dark:border-white/10'}`}
+              >
+                {theme.label}
+              </button>
+            ))}
+          </div>
+          {values.theme_key === 'custom' ? (
+            <label className="mt-3 flex items-center gap-3 text-sm text-[var(--text-secondary)]">
+              Cor principal
+              <input type="color" value={values.color} onChange={(event) => update('color', event.target.value)} className="h-9 w-12 cursor-pointer rounded-lg border-0 bg-transparent" />
+            </label>
+          ) : null}
+        </fieldset>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <input id="card-favorite" type="checkbox" checked={values.is_favorite} onChange={(event) => update('is_favorite', event.target.checked)} />
+          <label htmlFor="card-favorite" className="text-sm">Definir como cartão favorito</label>
+        </div>
+
+        <fieldset>
+          <legend className="text-sm font-medium">Alertas de limite</legend>
+          <div className="mt-2 flex flex-wrap gap-4">
+            {[50, 70, 90].map((threshold) => (
+              <label key={threshold} className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={values.alert_thresholds.includes(threshold)} onChange={() => toggleThreshold(threshold)} />
+                {threshold}%
+              </label>
+            ))}
+          </div>
+          <div className="mt-3 max-w-xs">
+            <Input label="Avisar vencimento com antecedência (dias)" type="number" min="1" max="30" value={values.due_alert_days} onChange={(event) => update('due_alert_days', event.target.value)} />
+          </div>
+          <label className="mt-3 inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={values.alert_spending_increase} onChange={(event) => update('alert_spending_increase', event.target.checked)} />
+            Avisar quando os gastos aumentarem 30% ou mais
+          </label>
+        </fieldset>
+
+        <label className="block space-y-1.5 text-sm font-medium">
+          Observações
+          <textarea value={values.notes} onChange={(event) => update('notes', event.target.value)} maxLength={500} rows={2} className="w-full rounded-xl border border-slate-900/10 bg-white/70 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-400/50 dark:border-white/10 dark:bg-white/[0.05]" />
+        </label>
+
+        {error ? <p role="alert" className="text-sm text-rose-600">{error}</p> : null}
+        <div className="flex justify-end gap-3 border-t border-slate-900/10 pt-4 dark:border-white/10">
+          <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" disabled={saving}>{saving ? 'Salvando...' : card ? 'Salvar alterações' : 'Adicionar cartão'}</Button>
         </div>
       </form>
     </Modal>

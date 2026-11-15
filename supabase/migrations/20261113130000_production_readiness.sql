@@ -59,6 +59,123 @@ create table if not exists public.import_batches (
   created_at timestamptz not null default now()
 );
 
+alter table public.invoices
+  add column if not exists reference_month date,
+  add column if not exists amount numeric(12, 2);
+
+do $$
+declare
+  has_legacy_invoice_columns boolean;
+begin
+  select count(*) = 3
+  into has_legacy_invoice_columns
+  from information_schema.columns
+  where table_schema = 'public'
+    and table_name = 'invoices'
+    and column_name in ('period_month', 'period_year', 'total');
+
+  if has_legacy_invoice_columns then
+    if exists (
+      select 1
+      from public.invoices
+      where period_month not between 1 and 12
+         or period_year not between 1 and 9999
+         or total < 0
+    ) then
+      raise exception 'public.invoices has invalid legacy period or total values; correct them before applying this migration';
+    end if;
+
+    if exists (
+      select 1
+      from public.invoices
+      where due_date is null
+    ) then
+      raise exception 'public.invoices has rows without due_date; fill those dates before applying this migration';
+    end if;
+
+    update public.invoices
+    set reference_month = coalesce(reference_month, make_date(period_year, period_month, 1)),
+        amount = coalesce(amount, total)
+    where reference_month is null
+       or amount is null;
+
+    alter table public.invoices
+      alter column reference_month set not null,
+      alter column amount set not null,
+      alter column due_date set not null;
+
+    create or replace function public.sync_legacy_invoice_columns()
+    returns trigger
+    language plpgsql
+    set search_path = ''
+    as $function$
+    declare
+      invoice_row jsonb := to_jsonb(new);
+      old_invoice_row jsonb;
+      invoice_reference_month date;
+      invoice_amount numeric;
+      legacy_period_changed boolean := false;
+      legacy_total_changed boolean := false;
+    begin
+      if tg_op = 'UPDATE' then
+        old_invoice_row := to_jsonb(old);
+        legacy_period_changed :=
+          invoice_row -> 'period_month' is distinct from old_invoice_row -> 'period_month'
+          or invoice_row -> 'period_year' is distinct from old_invoice_row -> 'period_year';
+        legacy_total_changed :=
+          invoice_row -> 'total' is distinct from old_invoice_row -> 'total';
+      end if;
+
+      if tg_op = 'UPDATE'
+         and legacy_period_changed
+         and invoice_row -> 'reference_month' is not distinct from old_invoice_row -> 'reference_month' then
+        invoice_reference_month := make_date(
+          (invoice_row ->> 'period_year')::integer,
+          (invoice_row ->> 'period_month')::integer,
+          1
+        );
+      else
+        invoice_reference_month := (invoice_row ->> 'reference_month')::date;
+      end if;
+
+      if invoice_reference_month is null then
+        invoice_reference_month := make_date(
+          (invoice_row ->> 'period_year')::integer,
+          (invoice_row ->> 'period_month')::integer,
+          1
+        );
+      end if;
+
+      if tg_op = 'UPDATE'
+         and legacy_total_changed
+         and invoice_row -> 'amount' is not distinct from old_invoice_row -> 'amount' then
+        invoice_amount := (invoice_row ->> 'total')::numeric;
+      else
+        invoice_amount := coalesce(
+          (invoice_row ->> 'amount')::numeric,
+          (invoice_row ->> 'total')::numeric
+        );
+      end if;
+
+      invoice_row := jsonb_set(invoice_row, '{reference_month}', to_jsonb(invoice_reference_month), true);
+      invoice_row := jsonb_set(invoice_row, '{amount}', to_jsonb(invoice_amount), true);
+      invoice_row := jsonb_set(invoice_row, '{period_month}', to_jsonb(extract(month from invoice_reference_month)::integer), true);
+      invoice_row := jsonb_set(invoice_row, '{period_year}', to_jsonb(extract(year from invoice_reference_month)::integer), true);
+      invoice_row := jsonb_set(invoice_row, '{total}', to_jsonb(invoice_amount), true);
+
+      new := jsonb_populate_record(new, invoice_row);
+      return new;
+    end;
+    $function$;
+
+    drop trigger if exists sync_legacy_invoice_columns on public.invoices;
+    create trigger sync_legacy_invoice_columns
+      before insert or update on public.invoices
+      for each row execute function public.sync_legacy_invoice_columns();
+  end if;
+end;
+$$;
+
 do $$
 begin
   if (
@@ -84,6 +201,14 @@ begin
       )
   ) <> 9 then
     raise exception 'public.invoices already exists with an incompatible schema; reconcile it before applying this migration';
+  end if;
+
+  if exists (
+    select 1
+    from public.invoices
+    where reference_month is null or amount is null
+  ) then
+    raise exception 'public.invoices has rows that could not be migrated to reference_month and amount';
   end if;
 
   if (
